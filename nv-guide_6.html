@@ -1,0 +1,3338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuevo Vallarta — Field Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sand: #F5EDD6;
+  --ink: #1A1209;
+  --rust: #C4522A;
+  --teal: #1E6B6B;
+  --gold: #D4A843;
+  --mist: #E8E0CC;
+  --jungle: #2D5A27;
+  --card-bg: #FAF5E8;
+  --border: #C8BAA0;
+  --subdued: #6B5D45;
+  --dim: #8B7355;
+  --c-food: #C4522A;
+  --c-bar: #1E6B6B;
+  --c-nature: #3A7D2C;
+  --c-culture: #7041A8;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--sand);
+  color: var(--ink);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+/* grain */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.45;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: sticky; top: 0; z-index: 500;
+  background: var(--ink);
+  display: flex; align-items: stretch;
+  height: 52px;
+  border-bottom: 2px solid rgba(212,168,67,0.5);
+}
+.nav-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem; font-style: italic;
+  color: var(--gold);
+  padding: 0 1.75rem;
+  display: flex; align-items: center;
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.nav-brand:hover { color: #fff; }
+.nav-links {
+  display: flex; flex: 1;
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-btn {
+  background: none; border: none;
+  color: rgba(245,237,214,0.45);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 1.1rem;
+  white-space: nowrap; flex-shrink: 0;
+  position: relative;
+  transition: color 0.15s;
+}
+.nav-btn::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: transparent; transition: background 0.15s;
+}
+.nav-btn:hover { color: rgba(245,237,214,0.8); }
+.nav-btn.active { color: var(--sand); }
+.nav-btn.active[data-page="home"]::after    { background: var(--gold); }
+.nav-btn.active[data-page="restaurants"]::after { background: var(--c-food); }
+.nav-btn.active[data-page="bars"]::after    { background: var(--c-bar); }
+.nav-btn.active[data-page="nature"]::after  { background: var(--c-nature); }
+.nav-btn.active[data-page="culture"]::after { background: var(--c-culture); }
+.nav-btn.active[data-page="map"]::after     { background: var(--gold); }
+.nav-btn.active[data-page="top"]::after     { background: var(--rust); }
+
+/* ─── BACK BUTTON ─── */
+.nav-back {
+  background: none; border: none;
+  color: rgba(245,237,214,0.55);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.08em;
+  cursor: pointer; padding: 0.4rem 0.6rem;
+  transition: color 0.15s;
+  display: none;
+  align-items: center; gap: 0.3rem;
+  flex-shrink: 0;
+}
+.nav-back:hover { color: var(--sand); }
+.nav-back.visible { display: flex; }
+
+/* ─── PAGES ─── */
+.page { display: none; }
+.page.active { display: block; animation: fadeUp 0.2s ease both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── HOME ─── */
+.home-hero {
+  padding: 5rem 3rem 3.5rem;
+  border-bottom: 2px solid var(--ink);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4rem; align-items: end;
+}
+.hero-eyebrow {
+  font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--rust); margin-bottom: 1rem; display: block;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3.5rem, 8vw, 6.5rem);
+  line-height: 0.92; font-weight: 700;
+}
+.hero-title em { font-style: italic; color: var(--teal); }
+.hero-meta {
+  font-size: 0.62rem; line-height: 1.95; color: var(--subdued);
+  border-left: 2px solid var(--border); padding-left: 1.5rem;
+  max-width: 220px;
+}
+.hero-meta strong { color: var(--ink); display: block; margin-bottom: 0.3rem; font-size: 0.7rem; }
+.hero-meta em { color: var(--rust); font-style: normal; }
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.home-tile {
+  padding: 2.5rem 2.25rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative; overflow: hidden;
+}
+.home-tile:hover { background: var(--mist); }
+.home-tile:hover .tile-arrow { transform: translate(4px,-4px); }
+.tile-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: block; margin-bottom: 1.25rem;
+}
+.tile-icon { font-size: 1.8rem; display: block; margin-bottom: 1rem; }
+.tile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem; font-style: italic; margin-bottom: 0.3rem;
+}
+.tile-count {
+  font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--subdued); margin-bottom: 0.75rem;
+}
+.tile-desc { font-size: 0.62rem; line-height: 1.75; color: var(--subdued); }
+.tile-arrow {
+  position: absolute; bottom: 1.5rem; right: 1.75rem;
+  font-size: 0.7rem; color: var(--teal);
+  transition: transform 0.15s;
+}
+
+/* ─── PAGE HEADERS ─── */
+.page-header {
+  padding: 3.5rem 3rem 2.5rem;
+  border-bottom: 2px solid var(--ink);
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem;
+}
+.page-eyebrow {
+  font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-style: italic; line-height: 1;
+}
+.page-sub {
+  font-size: 0.62rem; color: var(--subdued); line-height: 1.85;
+  margin-top: 0.75rem; max-width: 440px;
+}
+.page-header-right {
+  font-size: 0.58rem; color: var(--dim); text-align: right;
+  line-height: 2; flex-shrink: 0;
+}
+
+/* ─── CONTENT SECTIONS ─── */
+.csection {
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid var(--border);
+}
+.csection-header {
+  display: flex; align-items: center; gap: 0.85rem;
+  margin-bottom: 0.4rem; flex-wrap: wrap;
+}
+.csection-emoji { font-size: 1.4rem; }
+.csection-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem; font-style: italic;
+}
+.csection-tag {
+  font-size: 0.52rem; letter-spacing: 0.2em; text-transform: uppercase;
+  background: var(--ink); color: var(--sand);
+  padding: 0.22rem 0.6rem; border-radius: 2px;
+}
+.csection-sub {
+  font-size: 0.62rem; color: var(--subdued); line-height: 1.8;
+  margin-bottom: 1.75rem; margin-top: 0.3rem; max-width: 560px;
+}
+
+/* ─── CARD GRID ─── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.25rem;
+}
+.card {
+  border: 1.5px solid var(--ink);
+  background: var(--card-bg);
+  padding: 1.4rem;
+  display: block; color: inherit;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  position: relative;
+  cursor: default;
+}
+.card:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--ink); }
+.card-top {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;
+}
+.card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.08rem; font-weight: 700; line-height: 1.2; flex: 1;
+}
+.card-right { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.card-emoji { font-size: 1.05rem; }
+.rating {
+  font-size: 0.68rem; font-weight: 700;
+  background: var(--gold); color: var(--ink);
+  padding: 0.2rem 0.45rem; border-radius: 2px; white-space: nowrap;
+}
+.rating.top { background: var(--rust); color: #fff; }
+.vibe-tag {
+  display: inline-block; font-size: 0.5rem; letter-spacing: 0.15em;
+  text-transform: uppercase; border: 1px solid var(--border);
+  padding: 0.18rem 0.45rem; margin-bottom: 0.65rem;
+  color: var(--subdued); border-radius: 2px;
+}
+.card-desc { font-size: 0.67rem; line-height: 1.82; color: #3D2E1A; }
+.must-order {
+  display: block; font-size: 0.55rem;
+  background: #FFF8E6; border: 1px solid var(--gold);
+  color: #6B4C00; padding: 0.3rem 0.55rem;
+  border-radius: 2px; margin-top: 0.6rem; line-height: 1.5;
+}
+/* nearby hint */
+.nearby {
+  margin-top: 0.7rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(30,107,107,0.07);
+  border-left: 2px solid var(--teal);
+  font-size: 0.56rem; line-height: 1.65; color: var(--teal);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nearby:hover { background: rgba(30,107,107,0.14); }
+
+.card-footer {
+  margin-top: 0.9rem; padding-top: 0.7rem;
+  border-top: 1px solid var(--mist);
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 0.4rem;
+}
+.card-meta { font-size: 0.56rem; color: var(--dim); }
+.card-link {
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--teal); text-decoration: none;
+  border-bottom: 1px solid var(--teal); padding-bottom: 1px;
+  transition: opacity 0.1s;
+}
+.card-link:hover { opacity: 0.6; }
+.card-tip {
+  font-size: 0.58rem; color: var(--teal);
+  border-left: 2px solid var(--teal); padding-left: 0.4rem;
+  margin-top: 0.6rem; line-height: 1.55;
+}
+.card-action-row {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.notice {
+  border: 1.5px dashed var(--border); background: transparent;
+  padding: 1.1rem 1.4rem; font-size: 0.64rem; line-height: 1.8;
+  color: var(--subdued); font-style: italic; grid-column: 1/-1;
+}
+
+/* ─── MAP ─── */
+#map-container { height: calc(100vh - 52px); position: relative; }
+#map { width: 100%; height: 100%; }
+.map-legend {
+  position: absolute; bottom: 1.75rem; left: 1rem; z-index: 1000;
+  background: var(--ink); color: var(--sand);
+  padding: 1rem 1.3rem; border: 1px solid rgba(212,168,67,0.5);
+  font-size: 0.56rem; min-width: 150px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+}
+.map-legend-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 0.9rem; color: var(--gold);
+  display: block; margin-bottom: 0.85rem;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 0.55rem;
+  margin-bottom: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── SITE FOOTER ─── */
+.site-footer {
+  padding: 1.75rem 3rem; font-size: 0.56rem; color: var(--dim);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 680px) {
+  .home-hero { grid-template-columns: 1fr; gap: 2rem; padding: 3rem 1.5rem 2rem; }
+  .hero-meta { max-width: 100%; border-left: none; border-top: 1px solid var(--border); padding: 1rem 0 0; }
+  .page-header { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
+  .csection { padding: 2rem 1.5rem; }
+  nav { padding: 0; }
+  .nav-brand { padding: 0 1rem; font-size: 0.85rem; }
+}
+
+/* ─── COMMENTS ─── */
+.comment-section {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--mist);
+  padding-top: 0.75rem;
+}
+.comment-section-bar {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.comment-toggle {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--teal); padding: 0;
+  transition: opacity 0.15s;
+}
+.comment-toggle:hover { opacity: 0.65; }
+.comment-list { margin-top: 0.6rem; display: none; }
+.comment-list.open { display: block; }
+.comment-item {
+  font-size: 0.58rem; line-height: 1.7;
+  padding: 0.45rem 0;
+  border-bottom: 1px dotted var(--border);
+  color: var(--ink);
+}
+.comment-author { font-weight: 700; color: var(--rust); margin-right: 0.35rem; }
+.comment-date { color: var(--dim); font-size: 0.5rem; }
+.comment-form { margin-top: 0.6rem; display: none; }
+.comment-form.open { display: block; }
+.comment-form input,
+.comment-form textarea {
+  width: 100%; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; background: var(--sand);
+  border: 1px solid var(--border); color: var(--ink);
+  padding: 0.4rem 0.55rem; margin-bottom: 0.4rem;
+  resize: none; outline: none;
+  transition: border-color 0.15s;
+}
+.comment-form input:focus,
+.comment-form textarea:focus { border-color: var(--teal); }
+.comment-submit {
+  background: var(--teal); color: var(--sand);
+  border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.45rem 1rem;
+  transition: background 0.15s;
+}
+.comment-submit:hover { background: var(--ink); }
+.comment-empty { font-size: 0.56rem; color: var(--dim); font-style: italic; padding: 0.3rem 0; }
+
+/* ─── LIKES ─── */
+.like-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: none; border: 1px solid var(--border);
+  cursor: pointer; padding: 0.2rem 0.55rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.08em;
+  color: var(--subdued); border-radius: 2px;
+  transition: all 0.15s; user-select: none;
+}
+.like-btn:hover { border-color: var(--rust); color: var(--rust); }
+.like-btn.liked { background: #FFF0EE; border-color: var(--rust); color: var(--rust); }
+.like-btn .like-count { font-weight: 700; }
+
+/* ─── MOST LIKED PAGE ─── */
+.top-spot-card {
+  border: 1.5px solid var(--ink);
+  background: var(--card-bg);
+  padding: 1.25rem 1.4rem;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0 1rem;
+  align-items: start;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.top-spot-card:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--ink); }
+.top-spot-rank {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-weight: 700; font-style: italic;
+  color: var(--border); padding-top: 0.1rem;
+  text-align: right;
+}
+.top-spot-rank.gold { color: var(--gold); }
+.top-spot-rank.silver { color: #A0A0A0; }
+.top-spot-rank.bronze { color: #C4522A; }
+.top-spot-body {}
+.top-spot-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem;
+}
+.top-spot-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700; line-height: 1.2;
+}
+.top-spot-cat {
+  font-size: 0.44rem; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 0.18rem 0.45rem; border-radius: 2px; color: #fff;
+  flex-shrink: 0; margin-top: 0.15rem;
+}
+.top-spot-desc { font-size: 0.62rem; line-height: 1.75; color: var(--subdued); margin-bottom: 0.5rem; }
+.top-spot-meta {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+}
+.top-spot-likes {
+  font-size: 0.56rem; font-weight: 700; color: var(--rust);
+  display: flex; align-items: center; gap: 0.2rem;
+}
+.top-spot-empty {
+  grid-column: 1/-1; text-align: center; padding: 3rem 1rem;
+  font-size: 0.65rem; color: var(--dim); font-style: italic; line-height: 2;
+}
+.top-spot-clickable {
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 0.15rem 0.25rem 0.25rem;
+  margin: -0.15rem -0.25rem 0.1rem;
+  transition: background 0.15s;
+}
+.top-spot-clickable:hover { background: rgba(196,82,42,0.07); }
+.top-spot-goto {
+  font-size: 0.55rem; color: var(--rust); opacity: 0;
+  transition: opacity 0.15s; margin-left: 0.2rem;
+}
+.top-spot-clickable:hover .top-spot-goto { opacity: 1; }
+.top-spot-comments {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--mist);
+}
+.top-spot-comment-list .comment-item {
+  font-size: 0.58rem; line-height: 1.7;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--mist);
+}
+.top-spot-comment-list .comment-item:last-child { border-bottom: none; }
+.top-spot-comment-list .comment-empty {
+  font-size: 0.56rem; color: var(--dim); font-style: italic; padding: 0.25rem 0;
+}
+.liked-filters {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.liked-filter-btn {
+  background: none; border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--subdued);
+  transition: all 0.15s; border-radius: 2px;
+}
+.liked-filter-btn:hover { border-color: var(--ink); color: var(--ink); }
+.liked-filter-btn.active { background: var(--ink); color: var(--sand); border-color: var(--ink); }
+
+/* ─── MAPS SEARCH BAR ─── */
+.maps-search-row {
+  display: flex; gap: 0.5rem; margin-bottom: 0.5rem;
+}
+.maps-search-input {
+  flex: 1; font-family: 'Space Mono', monospace;
+  font-size: 0.64rem; background: var(--sand);
+  border: 1.5px solid var(--teal); color: var(--ink);
+  padding: 0.5rem 0.65rem; outline: none;
+}
+.maps-search-input:focus { border-color: var(--ink); }
+.maps-search-btn {
+  background: var(--teal); color: #fff; border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.5rem 0.9rem; white-space: nowrap;
+  transition: background 0.15s;
+}
+.maps-search-btn:hover { background: var(--ink); }
+.maps-hint {
+  font-size: 0.54rem; color: var(--dim); line-height: 1.65;
+  padding: 0.5rem 0.7rem;
+  background: rgba(30,107,107,0.07);
+  border-left: 2px solid var(--teal);
+  margin-bottom: 0.9rem;
+}
+.maps-hint a { color: var(--teal); }
+.maps-url-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.maps-url-input {
+  flex: 1; font-family: 'Space Mono', monospace;
+  font-size: 0.58rem; background: var(--sand);
+  border: 1.5px solid var(--border); color: var(--ink);
+  padding: 0.45rem 0.6rem; outline: none;
+  transition: border-color 0.15s;
+}
+.maps-url-input:focus { border-color: var(--teal); }
+.maps-parse-btn {
+  background: var(--gold); color: var(--ink); border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.45rem 0.85rem; white-space: nowrap;
+  transition: background 0.15s;
+}
+.maps-parse-btn:hover { background: var(--rust); color: #fff; }
+.modal-divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 1rem 0 1.1rem;
+}
+.autofill-badge {
+  display: inline-block; font-size: 0.44rem; letter-spacing: 0.15em;
+  text-transform: uppercase; background: var(--teal); color: #fff;
+  padding: 0.1rem 0.4rem; border-radius: 2px; margin-left: 0.4rem;
+  vertical-align: middle; opacity: 0; transition: opacity 0.3s;
+}
+.autofill-badge.show { opacity: 1; }
+
+/* ─── ADD ENTRY BUTTON ─── */
+.add-entry-btn {
+  position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 900;
+  background: var(--rust); color: #fff;
+  border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.add-entry-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(26,18,9,0.75); backdrop-filter: blur(3px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card-bg); border: 2px solid var(--ink);
+  padding: 2rem 2.25rem; width: min(540px, 92vw); max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 8px 8px 0 var(--ink);
+  animation: fadeUp 0.18s ease both;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-style: italic; margin-bottom: 0.35rem;
+}
+.modal-sub { font-size: 0.6rem; color: var(--subdued); margin-bottom: 1.5rem; line-height: 1.7; }
+.modal-row { margin-bottom: 0.75rem; }
+.modal-label {
+  display: block; font-size: 0.52rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--subdued); margin-bottom: 0.25rem;
+}
+.modal-input, .modal-select, .modal-textarea {
+  width: 100%; font-family: 'Space Mono', monospace;
+  font-size: 0.64rem; background: var(--sand);
+  border: 1.5px solid var(--border); color: var(--ink);
+  padding: 0.5rem 0.65rem; outline: none;
+  transition: border-color 0.15s;
+}
+.modal-input:focus, .modal-select:focus, .modal-textarea:focus { border-color: var(--teal); }
+.modal-textarea { resize: vertical; min-height: 70px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+.modal-submit {
+  flex: 1; background: var(--rust); color: #fff; border: none;
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.7rem 1rem; transition: background 0.15s;
+}
+.modal-submit:hover { background: var(--ink); }
+.modal-cancel {
+  background: none; border: 1.5px solid var(--border); color: var(--subdued);
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.7rem 1rem; transition: border-color 0.15s, color 0.15s;
+}
+.modal-cancel:hover { border-color: var(--ink); color: var(--ink); }
+.modal-status { font-size: 0.6rem; margin-top: 0.75rem; color: var(--teal); display: none; }
+.modal-sheet-note {
+  font-size: 0.55rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dim); margin-top: 0.6rem; text-align: center;
+}
+.modal-sheet-note a { color: var(--teal); text-decoration: none; pointer-events: none; }
+.modal-sheet-note a.active { pointer-events: auto; }
+.modal-sheet-note a.active:hover { text-decoration: underline; }
+.footer-sheet-link {
+  color: var(--dim); text-decoration: none; letter-spacing: inherit;
+  pointer-events: none; opacity: 0.5;
+}
+.footer-sheet-link.active { pointer-events: auto; opacity: 1; color: var(--teal); }
+
+/* ─── LIVE SECTIONS ─── */
+.live-section {
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid var(--border);
+}
+.live-section-header {
+  display: flex; align-items: center; gap: 0.85rem;
+  margin-bottom: 1.75rem; flex-wrap: wrap;
+}
+.live-badge {
+  font-size: 0.46rem; letter-spacing: 0.18em; text-transform: uppercase;
+  background: var(--teal); color: #fff;
+  padding: 0.2rem 0.55rem; border-radius: 2px;
+}
+.loading-cards {
+  font-size: 0.6rem; color: var(--dim); font-style: italic;
+  padding: 1rem 0;
+}
+@media (max-width: 680px) {
+  .add-entry-btn { bottom: 1rem; right: 1rem; font-size: 0.52rem; padding: 0.65rem 1rem; }
+  .modal { padding: 1.5rem; }
+  .modal-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <span class="nav-brand" onclick="go('home')">NV Guide 🌴</span>
+  <button class="nav-back" id="nav-back-btn" onclick="goBack()">← Back</button>
+  <div class="nav-links">
+    <button class="nav-btn active" data-page="home"        onclick="go('home')">Home</button>
+    <button class="nav-btn"        data-page="restaurants" onclick="go('restaurants')">🍽 Restaurants</button>
+    <button class="nav-btn"        data-page="bars"        onclick="go('bars')">🍹 Bars</button>
+    <button class="nav-btn"        data-page="nature"      onclick="go('nature')">🌿 Nature</button>
+    <button class="nav-btn"        data-page="culture"     onclick="go('culture')">🎨 Culture</button>
+    <button class="nav-btn"        data-page="map"         onclick="go('map')">🗺 Map</button>
+    <button class="nav-btn"        data-page="top"         onclick="go('top')">❤️ Most Liked</button>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="home-hero">
+    <div>
+      <span class="hero-eyebrow">🌊 Field Guide · Riviera Nayarit · October</span>
+      <h1 class="hero-title">Nuevo<br><em>Vallarta</em></h1>
+    </div>
+    <div class="hero-meta">
+      <strong>What is this?</strong>
+      A personal field guide to the best of Nuevo Vallarta and the surrounding area. No resort nonsense, no sponsored placements, no filler.<br><br>
+      Sorted by category. October-optimized. Built from real research + local intel.<br><br>
+      Created by Zach Ubbelohde.<br><br>
+      <em>⚠ Always verify Oct hours — some spots close late Sep / early Oct.</em>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <div class="home-tile" onclick="go('restaurants')">
+      <span class="tile-dot" style="background:var(--c-food)"></span>
+      <span class="tile-icon">🍽️</span>
+      <div class="tile-name">Restaurants</div>
+      <div class="tile-count">21 spots · Seafood to splurge</div>
+      <div class="tile-desc">From hole-in-the-wall fish tacos to a top-100-in-Mexico dinner. Local-first, no resort dining.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('bars')">
+      <span class="tile-dot" style="background:var(--c-bar)"></span>
+      <span class="tile-icon">🍹</span>
+      <div class="tile-name">Bars</div>
+      <div class="tile-count">16 spots · Marina to nightclub</div>
+      <div class="tile-desc">DJ cantinas, rooftop sunsets, sports bars, craft beer, and the most underrated wine bar on the strip.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('nature')">
+      <span class="tile-dot" style="background:var(--c-nature)"></span>
+      <span class="tile-icon">🌿</span>
+      <div class="tile-name">Nature & Adventure</div>
+      <div class="tile-count">12 experiences · Turtles to hidden beaches</div>
+      <div class="tile-desc">Bioluminescent kayaking, croc sanctuaries, jungle hot springs, hidden waterfall hikes. October is peak for all of it.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('culture')">
+      <span class="tile-dot" style="background:var(--c-culture)"></span>
+      <span class="tile-icon">🎨</span>
+      <div class="tile-name">Culture & Food Tours</div>
+      <div class="tile-count">12 experiences · Markets to Sierra Madre</div>
+      <div class="tile-desc">Art walks, colonial ghost-towns, local barrio food tours, and a 1700s silver mining village untouched by time.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('map')">
+      <span class="tile-dot" style="background:var(--gold)"></span>
+      <span class="tile-icon">🗺️</span>
+      <div class="tile-name">Map View</div>
+      <div class="tile-count">All 48+ pins · Color-coded</div>
+      <div class="tile-desc">Everything on one map, color-coded by category. See what's near what and plan your days spatially.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('top')">
+      <span class="tile-dot" style="background:var(--rust)"></span>
+      <span class="tile-icon">❤️</span>
+      <div class="tile-name">Most Liked</div>
+      <div class="tile-count">All spots · Ranked by family votes</div>
+      <div class="tile-desc">Everything the group has hearted, sorted from most loved to least. Like something, it moves up.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🌴 Nuevo Vallarta Field Guide · By Zach · October</span>
+    <span>Ratings via Google Maps · No affiliation · No sponsored placements</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     RESTAURANTS
+══════════════════════════════════════ -->
+<div class="page" id="page-restaurants">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-food)">🍽️ Nuevo Vallarta Field Guide</div>
+      <h2 class="page-title">Restaurants</h2>
+      <p class="page-sub">Local-first, no resort dining. Pescado zarandeado is the regional signature dish — eat it at least once or you've failed. October = shoulder season, shorter waits, better prices.</p>
+    </div>
+    <div class="page-header-right">By Zach<br>Sorted by vibe + price<br>⚠ Verify Oct hours</div>
+  </div>
+
+  <!-- BREAKFAST & CASUAL -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">☀️</span>
+      <h3 class="csection-label">Breakfast & Casual</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Morning Fuel</span>
+    </div>
+    <p class="csection-sub">October is ideal — no snow-bird crowds yet, short waits, and the rainy-season produce is at its peak. Start your days right before heading out on nature or culture trips.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Luna+Luna+Bucerias+breakfast">
+        <div class="card-top">
+          <div class="card-name">Luna Luna</div>
+          <div class="card-right"><span class="card-emoji">🌙</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Breakfast · Bucerias · 15-Year Institution</span>
+        <p class="card-desc">Family-run, beloved for 15+ years. Huevos rancheros are iconic — spicy, rich, homemade chorizo 🌶️. Chicken sopes, enchiladas suizas, plantain dishes. Regulars have their own tables. In October you'll probably walk right in.</p>
+        <div class="must-order">🏆 Order: Huevos Rancheros · Plantain sopes · Homemade chorizo anything</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Bucerias Monday Market is a short walk — combine for a perfect morning → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias · Morning hours</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Luna+Luna+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Proyecto+Darwin+Cafe+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Proyecto Darwin Café</div>
+          <div class="card-right"><span class="card-emoji">☕</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Artisanal Café · Bucerias Outskirts · Farm Setting</span>
+        <p class="card-desc">Hidden in farmland 10 minutes northeast of town — worth the hunt. Intimate, quiet, and genuinely artisanal: hand-roasted coffee that'll ruin you for resort breakfast forever ☕. Chilaquiles, omelettes, a cinnamon roll breakfast sandwich, and a choripan that punches way above its weight. Cash only, closes at 1pm sharp.</p>
+        <div class="must-order">🏆 Order: Hand-roasted coffee · Chilaquiles · Cinnamon roll breakfast sandwich</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Cash only · 8am–1pm · Bucerias outskirts</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Proyecto+Darwin+Cafe+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Panquekis+House+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Panquekis House</div>
+          <div class="card-right"><span class="card-emoji">🥞</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Family-Run · Bucerias · Pancakes Done Right</span>
+        <p class="card-desc">Don't let the name fool you — yes, the pancakes are great, but so are the waffles, chilaquiles, elote, and omelettes 🍳. Family-run, friendly English-speaking staff, generous portions, and genuinely good ingredients for the price. The kind of spot locals actually go to, not just recommend to tourists.</p>
+        <div class="must-order">🏆 Order: Pancakes · Chilaquiles · Huevos a la mexicana</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · 8am–2pm · Closed Wednesdays · Bucerias</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Panquekis+House+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Karens+Place+Bucerias+beachfront">
+        <div class="card-top">
+          <div class="card-name">Karen's Place</div>
+          <div class="card-right"><span class="card-emoji">🌅</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Beachfront · Bucerias · Open Since 1998</span>
+        <p class="card-desc">Oceanfront breakfast with full panoramic Banderas Bay views — the kind of setting where eggs benedict tastes better just by proximity to the Pacific 🌊. Open since 1998, which means they've earned it. Breakfast burritos, hash skillets, and fresh fish. Dolphin sightings reported regularly. Slightly pricier but the view is the point.</p>
+        <div class="must-order">🏆 Order: Eggs benedict · Breakfast burrito · Fresh-squeezed juice</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Bucerias beachfront · 9am–9pm daily · Est. 1998</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Karens+Place+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Tacos+Barbacoa+Don+Javier+Nuevo+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Tacos de Barbacoa Don Javier</div>
+          <div class="card-right"><span class="card-emoji">🌯</span><span class="rating top">⭐ 5.0</span></div>
+        </div>
+        <span class="vibe-tag">Taco Stand · Barely Discovered · NV Area</span>
+        <p class="card-desc">Perfect 5.0, only 10 reviews — that's not a fluke, that's an undiscovered local spot. Barbacoa de res done right: slow-cooked beef, consommé, handmade tortillas. Weekend mornings are prime 🕗. Ask a local for the exact spot.</p>
+        <div class="must-order">🏆 Order: Barbacoa tacos · Consommé · Don't skip the salsa bar</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Cash · Weekend mornings · Hunt it down on Google Maps</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Tacos+Barbacoa+Don+Javier+Nuevo+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://sukhabeachhouse.com">
+        <div class="card-top">
+          <div class="card-name">Sukha Beach House</div>
+          <div class="card-right"><span class="card-emoji">🏄</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">All-Day Beachfront · Bucerias North End</span>
+        <p class="card-desc">All-day 2-for-1 on mango, cucumber, and pineapple margaritas before you even look at the food 🍹. Grilled rosemary octopus, Vallarta ceviche, crab-stuffed poblano. Great for a slow midday session that becomes an afternoon.</p>
+        <div class="must-order">🏆 Order: Grilled rosemary octopus · Mango margarita · Crab poblano</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Cervecería Buclas is a 10-min walk for a craft beer close-out → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Playa Los Picos 358, Bucerias · 9:30am–10:30pm</span>
+          <a class="card-link" href="https://sukhabeachhouse.com" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Bistro+Cobojo+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Bistro Cobojo</div>
+          <div class="card-right"><span class="card-emoji">🥚</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Creative Mexican · Bucerias · Breakfast + Dinner · Freshly Baked Bread</span>
+        <p class="card-desc">Modern ambiance, imaginative menu that takes Mexican cuisine somewhere interesting without going precious about it. Breakfast standouts: fresh-squeezed juice, specialty coffee, chilaquiles done right, and a breakfast sandwich on bread baked in-house daily 🥐. Dinner is equally strong. Chipotle sauce is borderline legendary. They feed the iguanas at closing — stay for it.</p>
+        <div class="must-order">🏆 Order: Chilaquiles · Breakfast sandwich (house-baked bread) · Anything with the chipotle sauce</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias · Breakfast + dinner · Healthy options · Fresh daily bakes</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Bistro+Cobojo+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Tacos+Junior+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Tacos Junior</div>
+          <div class="card-right"><span class="card-emoji">🌮</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Al Pastor Specialist · Bucerias · Shawarma Spit · Pineapple Required</span>
+        <p class="card-desc">They do one thing: al pastor tacos. And they do it better than anyone in Bucerias 🥩. Thin-sliced pork marinated in achiote on a vertical spit (shawarma-style — technically Lebanese-Mexican fusion, which tracks with the region's history), sliced straight into a hot tortilla with pineapple, cilantro, and onion. The author of the best Bucerias restaurant list visited three times on one trip. That's the review.</p>
+        <div class="must-order">🏆 Order: Al pastor tacos · Acoger with pineapple · Quesadilla de pastor if you're starving</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias · Lunch + dinner · Cash · One mission, executed perfectly</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Tacos+Junior+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Eddies+Nopal+Beach+Restaurant+Nuevo+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Eddie's Nopal Beach</div>
+          <div class="card-right"><span class="card-emoji">🏖️</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Beach Landmark · All-Day · NV Beachfront · Family-Run</span>
+        <p class="card-desc">NV's definitive beachfront institution. Eddie was originally Lebanese — the menu is a fascinating Mexican-Lebanese hybrid that somehow works perfectly 🧆. The current owner (his son) carries on obsessively and personally responds to almost every review online. Breakfast, lunch, dinner, and beach access all in one spot.</p>
+        <div class="must-order">🏆 Order: Lebanese-style dishes · Grilled fish · Beach margarita</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · NV beachfront · All day · Family-run · Easy to walk to</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Eddies+Nopal+Beach+Nuevo+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+    <!-- SEAFOOD -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🐟</span>
+      <h3 class="csection-label">Seafood — The Whole Point</h3>
+      <span class="csection-tag" style="background:#1A5E7A">Nayarit-Style</span>
+    </div>
+    <p class="csection-sub">Pescado zarandeado = whole fish slow-grilled over mesquite, basted in chile-achiote marinade. It's the regional dish. Non-negotiable.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Mar+y+Sol+Bucerias+seafood">
+        <div class="card-top">
+          <div class="card-name">Mar y Sol</div>
+          <div class="card-right"><span class="card-emoji">🐠</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Beachfront · Bucerias · ~15 min north</span>
+        <p class="card-desc">Most beloved seafood spot in Bucerias and the definitive place for Pescado Zarandeado in the region. Feet-in-the-sand tables, mesquite smoke you can smell from a block away 🔥. Go at sunset — the views are free.</p>
+        <div class="must-order">🏆 Order: Pescado Zarandeado · Ceviche · Sunset margarita</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: El Rincón de Ensenada is a 5-min walk for fish tacos. Cervecería Buclas for a craft-beer nightcap → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · 9:30am–11:30pm · Bucerias beachfront</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Mar+y+Sol+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/El+Marlin+de+Tepic+Nuevo+Vallarta">
+        <div class="card-top">
+          <div class="card-name">El Marlín de Tepic</div>
+          <div class="card-right"><span class="card-emoji">🦑</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Local Spot · Hwy 200 Entrance · Nuevo Vallarta</span>
+        <p class="card-desc">Right at NV's second entrance off Hwy 200 — tourists drive past it every day, locals fill it every night. One of the best freshness reputations in Banderas Bay. Free tequila shot per table 🥃. Always busy = always fresh.</p>
+        <div class="must-order">🏆 Order: Zarandeado · Octopus al ajillo · Seafood soup</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: La Catrina beer garden is minutes away in Las Jarretaderas → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Hwy 200 / NV entrance · Cash friendly</span>
+          <a class="card-link" href="https://www.google.com/maps/search/El+Marlin+Tepic+Nuevo+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.theblueshrimpgroup.com/theblueshrimp-nv">
+        <div class="card-top">
+          <div class="card-name">The Blue Shrimp</div>
+          <div class="card-right"><span class="card-emoji">🦐</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Lagoon-Side · Las Jarretaderas · Nuevo Vallarta</span>
+        <p class="card-desc">No ocean view — instead, a serene lagoon with herons, turtles, iguanas, and the occasional drifting croc 🐊. Banderas Bay blue shrimp are the biggest in the region. Quieter and more local-feeling than beachfront spots.</p>
+        <div class="must-order">🏆 Order: Garlic shrimp · Seafood molcajete · Mahi mahi</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Nearby: El Cora Crocodile Sanctuary is a short drive — pair for a wildlife afternoon → Nature</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Blvd Nayarit 208 · Lagoon-side seating</span>
+          <a class="card-link" href="https://www.theblueshrimpgroup.com" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/El+Rincon+de+Ensenada+Bucerias">
+        <div class="card-top">
+          <div class="card-name">El Rincón de Ensenada</div>
+          <div class="card-right"><span class="card-emoji">🌮</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Hole-in-the-Wall · Fish Tacos · Bucerias</span>
+        <p class="card-desc">Zero frills, maximum taco. Best fish and shrimp tacos in Bucerias — light crispy batter, fresh guac, heat-forward salsas. Marlin burrito is a sleeper hit 🎣. Cash only. Eat here at least twice.</p>
+        <div class="must-order">🏆 Order: Fish taco · Shrimp taco · Marlin burrito</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Mar y Sol is a short walk for a proper sit-down seafood follow-up. Cervecería Buclas nearby → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Cash only · ~$110 MXN/burrito · Near Bucerias beach</span>
+          <a class="card-link" href="https://www.google.com/maps/search/El+Rincon+Ensenada+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Fat+Boy+Seafood+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Fat Boy Seafood</div>
+          <div class="card-right"><span class="card-emoji">🦞</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Beachfront · Bucerias · Local Approved · Generous Portions</span>
+        <p class="card-desc">Beachfront spot that gets the thumbs up from locals, not just tourists — that's the tell. Known for obscenely generous portions: the lobster platter comes with king prawns, scallops, bread, and vegetables. Bacon-wrapped cheese-stuffed shrimp is the crowd highlight 🦐. Great margaritas with a kick.</p>
+        <div class="must-order">🏆 Order: Lobster platter · Bacon-wrapped stuffed shrimp · Mahi mahi</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Cervecería Buclas is a short walk for craft beer → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Av. Pacífico 4, Bucerias · Beachfront</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Fat+Boy+Seafood+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Armando+Place+Bucerias+seafood">
+        <div class="card-top">
+          <div class="card-name">Armando's Place</div>
+          <div class="card-right"><span class="card-emoji">🐙</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Sea-to-Table · Bucerias · Chef-Driven · Garden Patio</span>
+        <p class="card-desc">Chef Armando goes to the La Cruz fish market every morning — the menu is literally whatever was freshest that day 🎣. Grilled octopus, coconut shrimp, paella, lobster fettuccine, Mahi Mahi — all subject to change. Each taco uses a different tortilla type. The back patio is a private garden oasis. Special requests welcome if you message ahead.</p>
+        <div class="must-order">🏆 Order: Whatever's on the daily menu · The fish tacos · Grilled octopus</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Bucerias Monday Market is close — morning market + Armando's lunch = perfect day → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Bucerias · 9am–9pm · DM ahead for special requests</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Armandos+Place+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+
+  <!-- NUEVO VALLARTA STRIP + SPLURGE ALTERNATIVES -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🥩</span>
+      <h3 class="csection-label">NV Strip & International</h3>
+      <span class="csection-tag" style="background:var(--ink)">Blvd. Nayarit</span>
+    </div>
+    <p class="csection-sub">For when you want to stay local to NV proper, or crave something other than Mexican/seafood without resorting to the resort.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.opentable.com/r/asador-la-vaca-argentina-nuevo-vallarta">
+        <div class="card-top">
+          <div class="card-name">Asador La Vaca Argentina</div>
+          <div class="card-right"><span class="card-emoji">🥩</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Argentine Steakhouse · Blvd. Nayarit · Legit Gaucho</span>
+        <p class="card-desc">Runs by an actual Argentine gaucho chef — not a theme, not a gimmick. Beef from novillo cattle under 420kg, which is the indicator of quality in Argentine parrilla culture 🇦🇷. Extensive wine cave maintained at 18°C. One of OpenTable's Diners' Choice picks for NV. Worth it when you need a proper steak night.</p>
+        <div class="must-order">🏆 Order: Mixed parrilla · Short ribs · Argentine Malbec from the cave</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: The Wine Corner by VINESP is close — pre-dinner wine pairing → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Blvd. Nayarit · Reserve via OpenTable</span>
+          <a class="card-link" href="https://www.opentable.com/r/asador-la-vaca-argentina-nuevo-vallarta" target="_blank">↗ Reserve</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Mikoh+Japanese+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Mikoh</div>
+          <div class="card-right"><span class="card-emoji">🍱</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Japanese · Sushi + Robata · Bucerias Golden Zone · Weekend DJs</span>
+        <p class="card-desc">Upscale-casual Japanese in Bucerias' golden zone — beach-adjacent and genuinely elegant without being uptight 🍣. The robata grill is the move: everything comes off charcoal with a precision that's easy to miss in a beach town this size. Weekend DJ sets turn it into a proper night. Author cocktails. The food and the vibe both slap.</p>
+        <div class="must-order">🏆 Order: The Robata anything · Sushi omakase · Author cocktails</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Cervecería Buclas is a short walk for a casual post-dinner nightcap → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Bucerias golden zone · Weekend DJs · Reserve recommended</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Mikoh+Japanese+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Faro+Grill+La+Cruz+Huanacaxtle">
+        <div class="card-top">
+          <div class="card-name">Faro Grill</div>
+          <div class="card-right"><span class="card-emoji">🔭</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">La Cruz · Waterfront · Eclectic · Last Seating 8:45pm</span>
+        <p class="card-desc">Located right on the water in La Cruz de Huanacaxtle's charming fishing village — whale-watching spot in season, yacht parade year-round 🛥️. Eclectic menu leaning seafood, seasonal, and local. The walk along the beach and golf cart ride to the restaurant are genuinely part of the experience. Arrive 15 min early to enjoy them.</p>
+        <div class="must-order">🏆 Order: Catch of the day · Seafood-forward specials · Arrive for sunset</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: La Cruz Sunday Market starts here in November — scope the location → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · La Cruz de Huanacaxtle · Last seating 8:45pm · Book ahead</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Faro+Grill+La+Cruz" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DINNER & SPLURGE -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🕯️</span>
+      <h3 class="csection-label">Dinner & Splurge</h3>
+      <span class="csection-tag" style="background:var(--rust)">Worth It</span>
+    </div>
+    <p class="csection-sub">For when you want to actually sit down, take your time, and eat something that makes you feel things.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.opentable.com/r/loma-42-bahia-nuevo-vallarta">
+        <div class="card-top">
+          <div class="card-name">Loma 42 Bahía</div>
+          <div class="card-right"><span class="card-emoji">🔥</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Top 100 Mexico · Blvd. Nuevo Vallarta · Dinner</span>
+        <p class="card-desc">Ranked in Mexico's best 100 restaurants — and it's right on the boulevard. Chef Jesús Vázquez wood-fires everything. Garden-grown ingredients, serious cocktail list. The beet/pear salad is absurdly good 🍷.</p>
+        <div class="must-order">🏆 Order: Beet + pear salad · Wood-fired fish · Short ribs</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: The Wine Corner by VINESP is steps away — ideal pre-dinner glass → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Blvd. Nuevo Vallarta 4 · Reserve via OpenTable</span>
+          <a class="card-link" href="https://www.opentable.com/r/loma-42-bahia-nuevo-vallarta" target="_blank">↗ Reserve</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Cosecha+Farm+to+Table+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Cosecha Farm to Table</div>
+          <div class="card-right"><span class="card-emoji">🌱</span><span class="rating top">⭐ 5.0</span></div>
+        </div>
+        <span class="vibe-tag">#1 in Bahia de Banderas · Farm-to-Table · Bucerias</span>
+        <p class="card-desc">Perfect 5.0, ranked #1 in the entire municipality on TripAdvisor. Hyper-seasonal, ingredient-obsessed, contemporary Mexican with a strong Nayarit identity. Small, intimate 🌿. Reservation is not optional.</p>
+        <div class="must-order">🏆 Order: Whatever the seasonal tasting menu is that night</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Luna Luna is steps away for breakfast the next morning → Restaurants above</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$$ · Bucerias · Reservation required · Dinner only</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Cosecha+Farm+Table+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/La+Casa+Thierry+Blouet+Bucerias">
+        <div class="card-top">
+          <div class="card-name">La Casa by Thierry Blouet</div>
+          <div class="card-right"><span class="card-emoji">👨‍🍳</span><span class="rating">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Legendary Chef · Contemporary Mexican · Bucerias</span>
+        <p class="card-desc">Thierry Blouet has been one of PV's most respected chefs for 30+ years. His Bucerias outpost is more intimate, more relaxed. Red snapper is a unanimous must-order. Special occasion energy 🥂.</p>
+        <div class="must-order">🏆 Order: Red snapper · Tasting menu if offered</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$$ · Bucerias · Reservations strongly recommended</span>
+          <a class="card-link" href="https://www.google.com/maps/search/La+Casa+Thierry+Blouet+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Trattoria+Toscana+Mia+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Trattoria Toscana Mia</div>
+          <div class="card-right"><span class="card-emoji">🍝</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Tuscan Family · Bucerias Side Street · Since 2008</span>
+        <p class="card-desc">The Napolitano family arrived from Tuscany in 2008 and never left. Mama Pina's original recipes — handmade pasta, wood-fired pizza, proper Italian wine. A dozen tables, perpetually full. Free homemade limoncello at the end = religious experience 🍋.</p>
+        <div class="must-order">🏆 Order: Pasta del Santo · Gorgonzola anything · Limoncello (free, homemade)</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · 25 Hidalgo St, Bucerias · 3 blocks from plaza · Arrive early</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Toscana+Mia+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/La+Postal+restaurant+Bucerias">
+        <div class="card-top">
+          <div class="card-name">La Postal</div>
+          <div class="card-right"><span class="card-emoji">🪵</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Wood-Fired Italian · Garden Setting · Bucerias · Homemade Pasta</span>
+        <p class="card-desc">Italian restaurant in the heart of Bucerias with a genuinely beautiful garden setting — the kind of outdoor courtyard that makes you lose track of time 🌿. Pizzas in a wood-fired oven, homemade pastas, fresh salads. The pasta del Santo and à la Postal are the crowd favorites. Carpaccio and eggplant parm to start. Some of the best lasagna in the entire region, according to multiple independent reviewers who don't agree on much else.</p>
+        <div class="must-order">🏆 Order: Pasta del Santo · Wood-fired pizza · Beef carpaccio · The lasagna</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Bucerias · Garden seating · Dinner</span>
+          <a class="card-link" href="https://www.google.com/maps/search/La+Postal+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Ceviche+La+Esquina+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Ceviche La Esquina</div>
+          <div class="card-right"><span class="card-emoji">🍋</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Ceviche Specialists · Bucerias · Sells Out Daily · Lunch Only</span>
+        <p class="card-desc">One family. One product. The best ceviche in Bucerias, and it's not particularly close 🐟. Fish or shrimp, served in chunks (the correct way — not finely minced PV-style) on tostadas. You can order a full sharing plate or individual tostadas. They sell out every afternoon — arrive by 1pm at the latest. Open 11am–6pm, closed Wednesdays. The simplicity is the whole point.</p>
+        <div class="must-order">🏆 Order: Fish ceviche en cuadros · Shrimp tostada · Get there before 1pm</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias downtown · 11am–6pm · Closed Wed · Cash · Sells out</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Ceviche+La+Esquina+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.opentable.com/r/ten-foot-henry-bucerias">
+        <div class="card-top">
+          <div class="card-name">Ten Foot Henry — Bucerias</div>
+          <div class="card-right"><span class="card-emoji">🥬</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Vegetable-Forward · Sharing Plates · Bucerias · Calgary Import</span>
+        <p class="card-desc">The second location of a Calgary cult favorite, somehow planted in Bucerias — and it works. Veg-forward sharing plates, outstanding sea bass, chocolate avocado torte that shouldn't exist but does 🍫. Service is exceptionally attentive (maybe too attentive — every reviewer mentions the table checks). Book ahead on OpenTable, it fills fast. Loud inside; go for the food anyway.</p>
+        <div class="must-order">🏆 Order: Sea bass · Fried chicken (if still on menu) · Chocolate avocado torte · Whatever the seasonal veg special is</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Bucerias · OpenTable reservations recommended</span>
+          <a class="card-link" href="https://www.opentable.com/r/ten-foot-henry-bucerias" target="_blank">↗ Reserve</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.opentable.com/r/puerto-manjar-nuevo-vallarta">
+        <div class="card-top">
+          <div class="card-name">Puerto Manjar</div>
+          <div class="card-right"><span class="card-emoji">🌅</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Beachfront · Sunset Dining · Vidanta · Tableside Cocktails</span>
+        <p class="card-desc">Book the 7pm reservation — sunset hits at 7:30. The most romantic restaurant in the Nuevo Vallarta area and the only one where the setting genuinely earns the price tag 🦞. Lobster, octopus, bone marrow, catch of the day — all excellent. The highlight is tableside cocktail mixing and the <em>flaming Mexican coffee</em>, which is honestly a full performance. Yes, it's inside Vidanta resort. Worth sorting access for a special night.</p>
+        <div class="must-order">🏆 Order: Lobster · Octopus & bone marrow · Flaming Mexican coffee (it's a show) · Sunset table</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$$ · Vidanta resort access required · Book 7pm for sunset</span>
+          <a class="card-link" href="https://www.opentable.com/r/puerto-manjar-nuevo-vallarta" target="_blank">↗ Reserve</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/SATORI+Japanese+Nuevo+Vallarta">
+        <div class="card-top">
+          <div class="card-name">SATORI</div>
+          <div class="card-right"><span class="card-emoji">🍣</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Japanese · Omakase-style · Nuevo Vallarta · Intimate</span>
+        <p class="card-desc">Genuine Japanese experience in Nuevo Vallarta — which you wouldn't expect, and that's kind of the point. Chef Silvano runs a tight, ingredient-obsessed kitchen: best quality sushi in the Vallarta region, architectural plating, intimate atmosphere. "SATORI can't be explained, it must be experienced" is their whole energy and they're not wrong. Ideal for a quiet, focused dinner where food is the thing.</p>
+        <div class="must-order">🏆 Order: Omakase selection · Chef's sushi of the day · Let them guide you</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$$ · Nuevo Vallarta · Intimate seating · Dinner only</span>
+          <a class="card-link" href="https://www.google.com/maps/search/SATORI+Japanese+Nuevo+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/El+Burrote+smoked+marlin+burritos+PVR">
+        <div class="card-top">
+          <div class="card-name">El Burrote (Airport Burrito Legend)</div>
+          <div class="card-right"><span class="card-emoji">✈️</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Smoked Marlin Burritos · Near PVR Airport · Also in NV Walmart Plaza</span>
+        <p class="card-desc">Hole-in-the-wall across from the airport that's become a genuine institution. Smoked marlin, shrimp, crab, or octopus burritos for ~110 pesos — cash only. The salsas are a whole moment: try every one before picking. Fish al pastor tacos as backup if the burrito is too much. They also have a location inside Plaza Lago Real (by the NV Walmart) — clutch for a first-day or last-day meal 🌯.</p>
+        <div class="must-order">🏆 Order: Smoked marlin burrito · Try all the salsas · Fish al pastor tacos · Cash only</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Cash only · ~110 pesos · Near PVR airport + NV Walmart Plaza</span>
+          <a class="card-link" href="https://www.google.com/maps/search/El+Burrote+PVR+airport" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="notice">⚠️ <strong>October heads up:</strong> Some Bucerias restaurants close for low season (Sept–mid Oct). The spots listed here have the best track record for staying open — but always verify hours before making it your whole plan.</div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-restaurants">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🍽 Restaurants · NV Field Guide by Zach</span>
+    <span>⚠ Some Bucerias spots close Sept–mid Oct · Always verify</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     BARS
+══════════════════════════════════════ -->
+<div class="page" id="page-bars">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-bar)">🍹 Nuevo Vallarta Field Guide</div>
+      <h2 class="page-title">Bars</h2>
+      <p class="page-sub">No sponsored placements. Google ratings as sourced. Sorted by location + rating. A few spots close Mondays — check before you roll up.</p>
+    </div>
+    <div class="page-header-right">By Zach<br>No affiliation<br>Google ratings sourced</div>
+  </div>
+
+  <!-- MARINA -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">⚓</span>
+      <h3 class="csection-label">Marina & Waterfront</h3>
+      <span class="csection-tag" style="background:var(--c-bar)">Dockside</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=13193262786142358340">
+        <div class="card-top">
+          <div class="card-name">Tropicalito Cantina Marina</div>
+          <div class="card-right"><span class="card-emoji">🎶</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Dockside · DJ · Cocktails · Marina</span>
+        <p class="card-desc">Best cocktails + tacos in the marina. Vinyl DJ sets, killer tuna taco 🌮, and a genuinely great mixologist running the show. Closed Mon. Opens 4pm.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: The Blue Shrimp is close for a pre-drinks seafood session → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Closed Mon · Opens 4pm · 113 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=13193262786142358340" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=7905106313305491671">
+        <div class="card-top">
+          <div class="card-name">Sky Bar Copan</div>
+          <div class="card-right"><span class="card-emoji">🌅</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Rooftop · Paradise Village Resort · Sunset</span>
+        <p class="card-desc">Rooftop bar at Paradise Village. Book the sunset reservation 🌇 — genuinely stunning. Music video mixes all night. Food is mid; you're here for the view and only the view.</p>
+        <div class="card-footer">
+          <span class="card-meta">Resort access · 54 reviews · Book sunset slot</span>
+          <a class="card-link" href="https://maps.google.com/?cid=7905106313305491671" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- IN-TOWN -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏙️</span>
+      <h3 class="csection-label">In-Town & Local</h3>
+      <span class="csection-tag" style="background:var(--rust)">Street Level</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=8568378656494596861">
+        <div class="card-top">
+          <div class="card-name">Guicho's Sports Bar</div>
+          <div class="card-right"><span class="card-emoji">🏆</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Sports · Las Jarretaderas · Highest Rated in Area</span>
+        <p class="card-desc">Highest rated bar in the whole area. Any sport, any game 📺 — they'll find it. Unassuming, zero BS, high reward. Closed Mondays.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: El Marlín de Tepic is minutes away for a post-game seafood feed → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Closed Mon · Las Jarretaderas · 34 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=8568378656494596861" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=12407710629072892738">
+        <div class="card-top">
+          <div class="card-name">The Wine Corner by VINESP</div>
+          <div class="card-right"><span class="card-emoji">🍷</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Wine Bar · Blvd. Nuevo Vallarta · No TVs</span>
+        <p class="card-desc">No TVs. No sports. Just pure class 🧀. Spanish food, expert pairings, 50-peso happy hour pours. The anti-sports-bar everyone needs at least once.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Loma 42 Bahía is steps away — ideal pre- or post-dinner pairing → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Blvd. Nuevo Vallarta · 91 reviews · 50-peso HH pours</span>
+          <a class="card-link" href="https://maps.google.com/?cid=12407710629072892738" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=10720184819971712222">
+        <div class="card-top">
+          <div class="card-name">La Catrina</div>
+          <div class="card-right"><span class="card-emoji">💀</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Beer Garden · Las Jarretaderas · Fresh Seafood</span>
+        <p class="card-desc">Beer garden + bar & grill with absurdly fresh seafood 🦐. Colorful, loud, zero pretension. Go before it blows up — the locals already know about this one.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Nearby: El Cora Crocodile Sanctuary is a short drive — great afternoon before evening here → Nature</div>
+        <div class="card-footer">
+          <span class="card-meta">Las Jarretaderas · 55 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=10720184819971712222" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=145942172133961736">
+        <div class="card-top">
+          <div class="card-name">No Soy Juan</div>
+          <div class="card-right"><span class="card-emoji">🎸</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Bar + Restaurant · Blvd. Nuevo Vallarta · Full Night</span>
+        <p class="card-desc">Most elevated casual spot on the strip. Live music, creative cocktails 🍹, regional Mexican menu — the blue-corn pork tacos are an actual event. Best for a full night out.</p>
+        <div class="card-footer">
+          <span class="card-meta">Blvd. Nuevo Vallarta · 226 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=145942172133961736" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="http://www.vallartabeergarden.com/">
+        <div class="card-top">
+          <div class="card-name">Vallarta Beer Garden</div>
+          <div class="card-right"><span class="card-emoji">🍺</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Craft Beer · Live Music · Las Jarretaderas</span>
+        <p class="card-desc">Expat HQ. Mexican craft beer on tap 🍻, pool + ping pong 🏓, live music that doesn't suck. 240+ reviews and still earns every star.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: La Catrina is close — pair both for a solid Las Jarretaderas evening</div>
+        <div class="card-footer">
+          <span class="card-meta">Las Jarretaderas · 240 reviews</span>
+          <a class="card-link" href="http://www.vallartabeergarden.com/" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=15735718741568519261">
+        <div class="card-top">
+          <div class="card-name">The Drunken Duck Cantina</div>
+          <div class="card-right"><span class="card-emoji">🦆</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Sports Bar · Live Music · Opens 8am · Blvd. NV</span>
+        <p class="card-desc">Opens at 8am 💀, big screens, live band nightly, salsa dancing, and somehow Canadian poutine on the menu. The bacon-wrapped shrimp is apparently life-changing 🍤.</p>
+        <div class="card-footer">
+          <span class="card-meta">Opens 8am · Blvd. NV · Live band nightly · 123 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=15735718741568519261" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://maps.google.com/?cid=15575982531451831645">
+        <div class="card-top">
+          <div class="card-name">Cervecería Chapultepec</div>
+          <div class="card-right"><span class="card-emoji">💸</span><span class="rating">⭐ 4.3</span></div>
+        </div>
+        <span class="vibe-tag">Chain Bar · Blvd. NV · Open Till 1:30am</span>
+        <p class="card-desc">~18 peso menu items. Hit-or-miss chain, but the salsa bar 🌶️ alone might justify it. Loud, crowded, very cheap. Open till 1:30am — the final destination energy is real.</p>
+        <div class="card-footer">
+          <span class="card-meta">Open till 1:30am · ~18 peso items · 1,644 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=15575982531451831645" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESORT -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏨</span>
+      <h3 class="csection-label">Resort Bar Worth Breaking In For</h3>
+      <span class="csection-tag">Access Required</span>
+    </div>
+    <div class="card-grid">
+      <div class="card" data-maps-url="https://maps.google.com/?cid=7204311734644741305">
+        <div class="card-top">
+          <div class="card-name">Luxxe Bar</div>
+          <div class="card-right"><span class="card-emoji">🥃</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Tequila + Mezcal · Vidanta Resort · Jazz Trios</span>
+        <p class="card-desc">The one resort bar that actually slaps. Tequila & mezcal specialist 🌵, jazz trios 🎷, pairing dinners. Ask for Jose. Classy without being obnoxious about it.</p>
+        <div class="card-footer">
+          <span class="card-meta">Vidanta resort access or day pass · 40 reviews</span>
+          <a class="card-link" href="https://maps.google.com/?cid=7204311734644741305" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+      <div class="notice">⚠️ Luxxe Bar is inside Vidanta Resort — you'll need resort access or a day pass to get in. Annoying but 100% worth it if agave is your love language.</div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Jax+Bar+Grill+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Jax Bar & Grill</div>
+          <div class="card-right"><span class="card-emoji">🎵</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Live Music Daily · Trivia Nights · Bucerias</span>
+        <p class="card-desc">Live music almost every single day — and weekly pub trivia if you want to feel smart on vacation 🧠. One of the most consistent entertainment venues in Bucerias. Good bar food, cold beer, friendly crowd mix of expats and travelers. Gets going early and stays lively. The kind of place you pop in for one and stay for three hours.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Armando's Place is close for dinner first → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Bucerias · Live music almost daily · Trivia weekly</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Jax+Bar+Grill+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NIGHTLIFE + SHOWS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🎭</span>
+      <h3 class="csection-label">Nightlife & Shows</h3>
+      <span class="csection-tag" style="background:var(--ink)">Late Night · Entertainment</span>
+    </div>
+    <p class="csection-sub">For when you want to actually go out-out. NV doesn't have a huge club scene, but these cover the range from cabaret to full-send club.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Luna+Lounge+Bucerias+cabaret">
+        <div class="card-top">
+          <div class="card-name">Luna Lounge</div>
+          <div class="card-right"><span class="card-emoji">🎭</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Cabaret · Drag Shows · Live Performances · Bucerias</span>
+        <p class="card-desc">Bar and cabaret north of NV on the way to Punta Mita. Genuinely great shows: musical tributes, drag performances, theatre, comedy, specialty dinner menus 💃. VIP gold club with preferred seating and a champagne lounge. The kind of place that has no business being this good for a small beach town. Check their schedule ahead — shows vary.</p>
+        <div class="card-footer">
+          <span class="card-meta">Bucerias · Check schedule ahead · VIP seating available</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Luna+Lounge+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://bestofbucerias.com/eat-in-nuevo-nayarit/bestia-night-club/">
+        <div class="card-top">
+          <div class="card-name">Bestia Night Club</div>
+          <div class="card-right"><span class="card-emoji">🔊</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Nightclub · NV · Top-Tier Sound System · DJ Sets</span>
+        <p class="card-desc">When you want to actually go clubbing without driving to PV. Bestia is NV's most serious club — explosive DJ sets, legitimately excellent sound system, elegant-but-intense vibe 🎧. Not a bar, not a beach hangout — a real club. Goes late. Dress accordingly.</p>
+        <div class="card-footer">
+          <span class="card-meta">Nuevo Vallarta · Goes late · Check IG for events + lineups</span>
+          <a class="card-link" href="https://bestofbucerias.com/eat-in-nuevo-nayarit/bestia-night-club/" target="_blank">↗ Info</a>
+        </div>
+      </div>
+
+      <div class="notice">🎭 <strong>Rhythms of the Night</strong> — the sunset cruise + Las Caletas dinner show — technically lives in the Culture section but it's as much a night-out as it is culture. Worth stacking after a beach day. See → Culture page.</div>
+
+    </div>
+  </div>
+
+  <!-- BUCERIAS CRAFT -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🍻</span>
+      <h3 class="csection-label">Bucerias Craft Beer</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Local Brew · Nayarit</span>
+    </div>
+    <div class="card-grid">
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Cerveceria+Buclas+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Cervecería Buclas</div>
+          <div class="card-right"><span class="card-emoji">🍻</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Craft Brewery · Taproom + Beer Garden · Est. 2017</span>
+        <p class="card-desc">Nayarit-born craft brewery, beer garden + taproom opened 2023. IPA, stout, and Vienna lager are the standouts. Happy hour 5–7pm ($45 MXN pints 💀). Solid food menu — the burger is legit.</p>
+        <div class="must-order">🏆 Order: IPA or Vienna lager · The burger · Arrive at 5pm for HH</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Mar y Sol and El Rincón de Ensenada are a short walk for dinner → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Bucerias · Happy hour 5–7pm · Beer garden</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Cerveceria+Buclas+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUCERIAS BARS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🎸</span>
+      <h3 class="csection-label">Bucerias Bar Strip</h3>
+      <span class="csection-tag" style="background:var(--teal)">10 Min North</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Ozzie+Sports+Bar+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Ozzie's Sports Bar</div>
+          <div class="card-right"><span class="card-emoji">📺</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Sports Bar · Bucerias · Expat HQ · All Games</span>
+        <p class="card-desc">The Bucerias sports bar institution. Moved to the north end of town which hurt foot traffic but not quality — bartenders know their regulars and will find any game you need 📺. Cold beer, good vibes, zero pretension. Crowd is mainly Canadians and Americans who've been coming for years.</p>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias north · Afternoon–late</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Ozzie+Sports+Bar+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Shamrock+Irish+Pub+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Shamrock Irish Pub</div>
+          <div class="card-right"><span class="card-emoji">🍀</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Irish Pub · Live Music · Bucerias · Reliable</span>
+        <p class="card-desc">The anchor of the Bucerias bar scene. Within a block of Yo-Yo Mo's and Bucerias Gardens — so if it's quiet here, try one of those, vice versa 🎶. Live music most nights in high season, decent pub food, cold Guinness. The kind of place where you end up staying way longer than planned.</p>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Bucerias centro · Live music nights · Year-round</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Shamrock+Irish+Pub+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Yo+Yo+Mo+Bar+Bucerias">
+        <div class="card-top">
+          <div class="card-name">Yo-Yo Mo's</div>
+          <div class="card-right"><span class="card-emoji">🎱</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Casual · Pool Tables · Bucerias · Good Pizza</span>
+        <p class="card-desc">Canadian-owned, pool tables, actually good pizza 🍕. Younger vibe, genuinely relaxed rather than performing relaxed. Right across from Bucerias Gardens — easy to hit both in one night. Rare Bucerias bar that feels like a local hangout rather than tourist infrastructure.</p>
+        <div class="card-footer">
+          <span class="card-meta">$ · Bucerias centro · Pool tables · Late-night friendly</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Yo-Yo+Mo+bar+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-bars">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🍹 Bars · NV Field Guide by Zach</span>
+    <span>Ratings via Google Maps · No affiliation</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     NATURE
+══════════════════════════════════════ -->
+<div class="page" id="page-nature">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-nature)">🌿 Nuevo Vallarta Field Guide</div>
+      <h2 class="page-title">Nature & Adventure</h2>
+      <p class="page-sub">October = tail end of rainy season. Jungle is peak lush, waterfalls are at full flow, and bioluminescence is at its absolute strongest. Fewer crowds than high season. Good timing.</p>
+    </div>
+    <div class="page-header-right">October-optimized<br>Book ahead<br>🌧 Rainy season = good</div>
+  </div>
+
+  <!-- WILDLIFE -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🦎</span>
+      <h3 class="csection-label">Wildlife</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Off the Beaten Path</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Santuario+Cocodrilos+El+Cora+Bucerias">
+        <div class="card-top">
+          <div class="card-name">El Cora Crocodile Sanctuary</div>
+          <div class="card-right"><span class="card-emoji">🐊</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Wildlife · Bucerias · ~20 min north · Exc. Monday</span>
+        <p class="card-desc">Privately funded sanctuary near Flamingos Golf Club. Biologist-led tours, croc feeding, iguanas, turtles. The real move: <strong>Night of Legends</strong> — last Saturday of each month — nocturnal croc behavior, campfire, buffet dinner, live music 🔥. ~250 pesos/person.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: La Catrina beer garden is minutes away in Las Jarretaderas — perfect post-croc wind-down → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">~250 pesos · Exc. Mon · Night of Legends: last Sat/month</span>
+          <a class="card-link" href="https://www.google.com/maps/search/El+Cora+Cocodrilo+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Vallarta+Botanical+Gardens+Puerto+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Vallarta Botanical Gardens</div>
+          <div class="card-right"><span class="card-emoji">🌸</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Gardens · Orchids · River Swim · ~30 min south of PV</span>
+        <p class="card-desc">300+ orchid varieties, butterfly sanctuary, and a natural river swimming hole. October = peak green thanks to rainy season — best the gardens ever look. On-site restaurant. Orange bus from Basilio Badillo, PV. Tourists sleep on this one 🌺.</p>
+        <div class="card-footer">
+          <span class="card-meta">~$10 USD entry · Orange bus from Basilio Badillo · Half day</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Vallarta+Botanical+Gardens" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- WATER -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🌊</span>
+      <h3 class="csection-label">Water Adventures</h3>
+      <span class="csection-tag" style="background:#0D3A5C">After Dark + Daytime</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://mismaloyaxtreme.com">
+        <div class="card-top">
+          <div class="card-name">Bioluminescent Night Kayaking</div>
+          <div class="card-right"><span class="card-emoji">✨</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Night Adventure · Boca de Tomatlán · ~30 min south · At Dusk</span>
+        <p class="card-desc">Your paddle glows blue. Literally. October is peak bio activity — rainy season = more plankton = more glow ✨. Most tourists don't know this exists here. Book via Mismaloya Xtreme (locally owned, legit). Departs at dusk from Boca de Tomatlán.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Nearby: Quimixto waterfall hike departs from the same area — stack both into a full-day trip</div>
+        <div class="card-footer">
+          <span class="card-meta">Book in advance · Mismaloya Xtreme · Dusk departure</span>
+          <a class="card-link" href="https://mismaloyaxtreme.com" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Quimixto+waterfall+Jalisco">
+        <div class="card-top">
+          <div class="card-name">Quimixto Hidden Waterfall Hike</div>
+          <div class="card-right"><span class="card-emoji">💦</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Waterfall · Jungle Hike · South Bay · ~45 min by Water Taxi</span>
+        <p class="card-desc">Water taxi from Los Muertos Pier → charming village → 30–45 min jungle hike → stunning waterfall with natural pools. October bonus: rainy season means the falls are absolutely ripping 🌧. Bring a picnic — you'll want to stay.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Nearby: Bio kayaking departs from Boca de Tomatlán nearby — combine for an epic day</div>
+        <div class="card-footer">
+          <span class="card-meta">Water taxi from Los Muertos Pier · Bring cash + snacks · Full day</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Quimixto+waterfall" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.exploravallarta.com">
+        <div class="card-top">
+          <div class="card-name">Sea Turtle Release Program</div>
+          <div class="card-right"><span class="card-emoji">🐢</span><span class="rating">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Conservation · Sunset · Aug–Nov Active · Beach Camps</span>
+        <p class="card-desc">October is peak hatchling season — four species of sea turtle use Banderas Bay's beaches 🌊. Local volunteer beach camps run evening release ceremonies where you physically put baby turtles in the ocean. Explora Vallarta runs the best guided version with marine biologist narration. Genuinely life-altering if you've never done it. Some resort beaches run their own programs too — ask your hotel.</p>
+        <div class="must-order">🏆 Experience: Sunset release · Marine biologist narration · Contact Explora Vallarta</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Stack with: Bioluminescent kayaking the same evening — turtles at sunset, glowing paddles after dark</div>
+        <div class="card-footer">
+          <span class="card-meta">Aug–Nov season · Explora Vallarta: exploravallarta.com · ~$40 USD</span>
+          <a class="card-link" href="https://www.exploravallarta.com" target="_blank">↗ Book</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://wildmex.com/activities/marietas-islands-snorkel-tours-beach-of-love-tour-punta-mita-sayulita-puerto-vallarta/">
+        <div class="card-top">
+          <div class="card-name">Marietas Islands — Hidden Beach</div>
+          <div class="card-right"><span class="card-emoji">🏝️</span><span class="rating">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">UNESCO Biosphere · National Park · 116 Visitors/Day Cap</span>
+        <p class="card-desc">Uninhabited volcanic islands off Punta Mita — UNESCO Biosphere Reserve, declared national park in the 1960s 🌋. The Hidden Beach (Playa del Amor) is exactly what it sounds like: a secret sand beach inside a volcanic crater, only accessible by swimming through a rock tunnel. Only 116 people allowed per day. Closed Mon + Tue. No sunscreen at the beach, no drones. 100+ fish species, blue-footed boobies, dolphins. Book 2–3 days ahead minimum.</p>
+        <div class="must-order">🏆 Book: WildMex or Oceano Adventures from La Cruz/Sayulita · Departures ~8:30am</div>
+        <div class="card-footer">
+          <span class="card-meta">~$70–90 USD · Closed Mon–Tue · Book well ahead · Departures from La Cruz Marina</span>
+          <a class="card-link" href="https://wildmex.com/activities/marietas-islands-snorkel-tours-beach-of-love-tour-punta-mita-sayulita-puerto-vallarta/" target="_blank">↗ Book</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SPORT FISHING -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🎣</span>
+      <h3 class="csection-label">Sport Fishing</h3>
+      <span class="csection-tag" style="background:#0D3A5C">Banderas Bay · October = Prime</span>
+    </div>
+    <p class="csection-sub">October is one of the best fishing months in Banderas Bay. Mahi-Mahi and Marlin season peaks Sept–Feb. Yellowfin tuna runs strong through fall. The bay is one of the deepest in the world (900m+) — big fish are close to shore.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/sport+fishing+charter+Nuevo+Vallarta+marina">
+        <div class="card-top">
+          <div class="card-name">Banderas Bay Sport Fishing</div>
+          <div class="card-right"><span class="card-emoji">🎣</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Half Day or Full Day · NV Marina · October = Peak Mahi + Marlin</span>
+        <p class="card-desc">October puts you right in the prime window for mahi-mahi and marlin 🐟. The bay drops to 900m depth just offshore — you don't have to travel far to find pelagic species. Multiple charter operators run from the NV and La Cruz marinas. Half-day is plenty for mahi; full day if you're targeting marlin or want to go deeper. Most charters include tackle, license, cooler, and will fillet and bag your catch.</p>
+        <div class="must-order">🏆 Tip: Book via marina directly or WhatsApp locals. Avoid hotel-booked charters — 30% markup for same boat.</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 After: Take your catch to El Marlín de Tepic or Mar y Sol — some will cook your fish → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">~$300–600 USD/boat · NV Marina or La Cruz · Half day = 4–5 hrs</span>
+          <a class="card-link" href="https://www.google.com/maps/search/fishing+charter+Nuevo+Vallarta+marina" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://beachpleasemexico.com/things-to-do-in-nuevo-vallarta-mexico/">
+        <div class="card-top">
+          <div class="card-name">Monkey Mountain Hike</div>
+          <div class="card-right"><span class="card-emoji">🐒</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Hike · Sayulita · 360° Views · ~45 min from NV</span>
+        <p class="card-desc">The best hike on the north side of the bay — a 45-minute effort rewarded with 360° panoramic views of Sayulita, Punta Mita, Banderas Bay, and the Sierra Madre 🏔️. October greenery makes it peak-beautiful after the rainy season. No guide needed, well-trodden path. Bring water. Combine with a Sayulita afternoon — the town is right there.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Stack with: Sayulita day trip — hike in the morning, town in the afternoon → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · Sayulita · ~45 min hike · Trail starts near town · Bring water</span>
+          <a class="card-link" href="https://beachpleasemexico.com/things-to-do-in-nuevo-vallarta-mexico/" target="_blank">↗ Guide</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MOUNTAINS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">♨️</span>
+      <h3 class="csection-label">Into the Sierra</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Day Trip · Full Day</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Nuevo+Ixtlan+hot+springs+Nayarit">
+        <div class="card-top">
+          <div class="card-name">Nuevo Ixtlan Natural Hot Springs</div>
+          <div class="card-right"><span class="card-emoji">♨️</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Hot Springs · Sierra Madre · ~1.5 hrs Inland · Day Trip</span>
+        <p class="card-desc">Private stone tubs fed by natural springs under a jungle canopy. 60 pesos entry. Zero Instagram, zero tourists. Getting there requires effort — book a guide who bundles it with a village market stop + BBQ lunch. One of the most genuinely relaxing things in the region 🌿.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Tip: Many guides combine this with San Sebastián del Oeste for a full Sierra day → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">~60 pesos entry · Local guide recommended · Full day</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Nuevo+Ixtlan+hot+springs" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ZIP + SNORKEL -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🪂</span>
+      <h3 class="csection-label">Adrenaline</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Book Ahead</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.vallarta-adventures.com/en/tours/canopy-sierra-madre">
+        <div class="card-top">
+          <div class="card-name">Canopy River Zip Line</div>
+          <div class="card-right"><span class="card-emoji">🦅</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Zip Line · Sierra Madre · Full Day · All Ages</span>
+        <p class="card-desc">One of the top-rated adventure tours in the entire region and for good reason. Speedboat to the river, 4WD truck through jungle trails, mule up the mountain, then zip lines + rappelling + rope bridges through the Sierra Madre canopy 🌿. Multiple operators offer versions — Vallarta Adventures is the most organized. Full day, all ages, genuinely thrilling. October timing = lush jungle + strong flow in the river sections.</p>
+        <div class="must-order">🏆 Tips: Book Vallarta Adventures or Los Veranos Canopy · Full day · Arrive hydrated</div>
+        <div class="card-footer">
+          <span class="card-meta">~$100+ USD · Full day · Multiple operators · Book ahead</span>
+          <a class="card-link" href="https://www.vallarta-adventures.com" target="_blank">↗ Book</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Los+Arcos+snorkeling+Puerto+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Los Arcos Marine Sanctuary Snorkel</div>
+          <div class="card-right"><span class="card-emoji">🐠</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Snorkeling · South Bay · Marine Reserve · Half Day</span>
+        <p class="card-desc">Natural rock formations south of PV that create a protected underwater maze — coral reefs, sea turtles, manta rays, and more fish than you'll be able to identify 🐢. One of the most reliable snorkeling spots in the Bay of Banderas. Boats depart from the Marina in PV or NV. October water is warm and clear, and crowds are minimal. Book a small-group tour with a biologist guide for maximum intel.</p>
+        <div class="card-footer">
+          <span class="card-meta">~$50–80 USD · Half day · Departs from PV Marina · Book small group</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Los+Arcos+snorkeling+Puerto+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.skydivevallarta.com">
+        <div class="card-top">
+          <div class="card-name">Skydive Vallarta</div>
+          <div class="card-right"><span class="card-emoji">🪂</span><span class="rating">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Skydiving · Tandem · 10,000 ft · Banderas Bay Views</span>
+        <p class="card-desc">If you've ever thought about jumping out of a plane, this is the context where it makes the most sense aesthetically. Bird's-eye view of the entire Banderas Bay from 10,000 feet 🌊 — the bay is enormous and seeing it from altitude is something else. Tandem jumps with professional instructors. Reviewed as one of the best skydive experiences in Mexico by people who apparently do this regularly.</p>
+        <div class="card-footer">
+          <span class="card-meta">~$200+ USD · Tandem jump · Book well ahead · Weather dependent</span>
+          <a class="card-link" href="https://www.skydivevallarta.com" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-nature">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🌿 Nature & Adventure · NV Field Guide by Zach</span>
+    <span>October = peak waterfalls + bioluminescence 🌧</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     CULTURE
+══════════════════════════════════════ -->
+<div class="page" id="page-culture">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-culture)">🎨 Nuevo Vallarta Field Guide</div>
+      <h2 class="page-title">Culture & Food Tours</h2>
+      <p class="page-sub">October is lucky timing — the PV Art Walk opens this month (it runs Oct–May). La Cruz Sunday Market doesn't start until November, but Bucerias Monday Market runs year-round.</p>
+    </div>
+    <div class="page-header-right">October timing<br>Art Walk opens 🎉<br>Good month for this</div>
+  </div>
+
+  <!-- MARKETS & ART -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🎨</span>
+      <h3 class="csection-label">Art & Markets</h3>
+      <span class="csection-tag" style="background:var(--c-culture)">Weekly Events</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://takemetopuertovallarta.com/art-walk-puerto-vallarta/">
+        <div class="card-top">
+          <div class="card-name">Puerto Vallarta Art Walk</div>
+          <div class="card-right"><span class="card-emoji">🎨</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Art · Centro PV · Every Wednesday 6–10pm · Oct–May · Free</span>
+        <p class="card-desc">October = opening week of the season 🎉. Every Wednesday evening, Centro PV transforms — dozens of galleries open 6–10pm, free entry. Contemporary Mexican and international artists, wine while you wander. Genuinely vibrant. Zero pretension.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Zona Romántica restaurants are steps away — dinner before or after makes a perfect evening</div>
+        <div class="card-footer">
+          <span class="card-meta">Every Wed 6–10pm · Oct–May · Free · Centro PV</span>
+          <a class="card-link" href="https://takemetopuertovallarta.com/art-walk-puerto-vallarta/" target="_blank">↗ Site</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Bucerias+Monday+Market">
+        <div class="card-top">
+          <div class="card-name">Bucerias Monday Market</div>
+          <div class="card-right"><span class="card-emoji">🛒</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Market · Bucerias · Every Monday 9am–1pm · Year-Round</span>
+        <p class="card-desc">The year-round alternative to La Cruz (which starts in November). Street food, local produce, handmade crafts, live music. Thin October crowds = ideal wandering conditions. Explore Bucerias itself after 🧃.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Luna Luna breakfast is right there — market morning pairs perfectly → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Every Monday 9am–1pm · Bucerias · ~15 min north of NV</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Bucerias+Monday+Market" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="notice">☝️ <strong>La Cruz Sunday Market</strong> — the big one with 200 vendors on the waterfront — runs Nov–Apr only. You'll just miss it by a few weeks. But you get Art Walk opening week instead. That's a solid trade.</div>
+
+    </div>
+  </div>
+
+  <!-- DAY TRIPS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏘️</span>
+      <h3 class="csection-label">Day Trips & Deep Dives</h3>
+      <span class="csection-tag">Full Day · Book Ahead</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/San+Sebastian+del+Oeste+Jalisco">
+        <div class="card-top">
+          <div class="card-name">San Sebastián del Oeste</div>
+          <div class="card-right"><span class="card-emoji">🏘️</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">1700s Colonial Town · Sierra Madre · ~1.5 hrs Inland</span>
+        <p class="card-desc">Silver mining town, population ~600. Cobblestone streets, colonial church, central plaza unchanged for centuries. Legitimately feels like a time machine ⏳. Guided day trip is the move — most stops include a coffee break in a mountain village en route.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Tip: Some guides combine this with Nuevo Ixtlan hot springs for a full Sierra day → Nature</div>
+        <div class="card-footer">
+          <span class="card-meta">~1.5 hr drive · Guided tour recommended · Full day</span>
+          <a class="card-link" href="https://www.google.com/maps/search/San+Sebastian+del+Oeste" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Pitillal+neighborhood+Puerto+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Pitillal Neighborhood Food Tour</div>
+          <div class="card-right"><span class="card-emoji">🌮</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Food Tour · Deep-Local Barrio · Puerto Vallarta · 3.5 hrs</span>
+        <p class="card-desc">Deep-local PV neighborhood that tourists almost never visit. A 3.5-hour guided tour hits 8 authentic tasting spots — tacos, pozole, gorditas, real local food. Going solo is possible but you'll miss the best spots without a guide 🫔.</p>
+        <div class="card-footer">
+          <span class="card-meta">~3.5 hrs · Book via Viator or local operator · Puerto Vallarta</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Pitillal+Puerto+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Rancho+Primavera+Puerto+Vallarta">
+        <div class="card-top">
+          <div class="card-name">Rancho Primavera Cooking Experience</div>
+          <div class="card-right"><span class="card-emoji">🫔</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Family Ranch · Cooking + Horseback · ~20–30 min from PV</span>
+        <p class="card-desc">Family-owned ranch in the Sierra hills. Grind corn on a metate, make tortillas from scratch, horseback ride, eat everything you made 🌽. Way better than any resort cooking class. Actually connects you to the culture here.</p>
+        <div class="card-footer">
+          <span class="card-meta">Book via local tour operator · Transportation often included</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Rancho+Primavera+Puerto+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://beachpleasemexico.com/sayulita/">
+        <div class="card-top">
+          <div class="card-name">Sayulita Day Trip</div>
+          <div class="card-right"><span class="card-emoji">🤙</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Bohemian Surf Town · ~45 min North · All Day</span>
+        <p class="card-desc">Mexico's most famous boho surf town — cobblestones, murals, surf breaks off the main beach, wild street taco scene, indie boutiques 🏄. October means barely any crowds and jungle-lush backdrop from the rainy season. Pair with Monkey Mountain hike (Nature) for a perfect full day. Street tacos on the plaza for lunch, beer on the beach for sunset.</p>
+        <div class="must-order">🏆 Do: Monkey Mountain hike · Street tacos on the plaza · Mezcal at a terrace bar at sunset</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Stack with: Monkey Mountain hike — same location, morning hike + afternoon town → Nature</div>
+        <div class="card-footer">
+          <span class="card-meta">~45 min north of NV · Uber or rental car · Full day</span>
+          <a class="card-link" href="https://beachpleasemexico.com/sayulita/" target="_blank">↗ Guide</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.vallarta-adventures.com/en/tours/rhythms-of-the-night">
+        <div class="card-top">
+          <div class="card-name">Rhythms of the Night — Las Caletas</div>
+          <div class="card-right"><span class="card-emoji">🕯️</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Dinner Show · Sunset Catamaran · Las Caletas · By Boat Only</span>
+        <p class="card-desc">Catamaran leaves the NV marina at sunset, sails to Las Caletas — a beach with zero road access, surrounded by Sierra Madre mountains. 3-course candlelit dinner on the beach, then a stunning Indigenous-inspired performance show with no electricity (intentionally) 🌙. Weirdly transcendent for a tourist activity. Vallarta Adventures is a solid operator — not the janky resort-desk version.</p>
+        <div class="must-order">🏆 Tip: Book premium seats · Bring a light layer — cools down on the water at night</div>
+        <div class="card-footer">
+          <span class="card-meta">~$100 USD · Departs NV marina at sunset · vallarta-adventures.com</span>
+          <a class="card-link" href="https://www.vallarta-adventures.com/en/tours/rhythms-of-the-night" target="_blank">↗ Book</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Punta+Mita+village+Nayarit">
+        <div class="card-top">
+          <div class="card-name">Punta Mita Village + Destiladeras</div>
+          <div class="card-right"><span class="card-emoji">🏄</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Fishing Village · Beach · ~40 min North · No Agenda</span>
+        <p class="card-desc">The actual fishing village of Punta Mita — not the gated resort zone — is refreshingly unaffected by the luxury hotels nearby. Destiladeras is the long, mostly empty beach before the resort peninsula 🌊. Half-day format: wander the village, palapa lunch, beach time, back for sunset. October = basically yours alone. Rental car makes it easy.</p>
+        <div class="card-footer">
+          <span class="card-meta">~40 min north of NV · Rental car ideal · Half day</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Punta+Mita+village+Nayarit" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PV CULTURE -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🌆</span>
+      <h3 class="csection-label">PV Proper</h3>
+      <span class="csection-tag" style="background:var(--c-culture)">30 Min South</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Malecon+Puerto+Vallarta">
+        <div class="card-top">
+          <div class="card-name">PV Malecón Evening Walk</div>
+          <div class="card-right"><span class="card-emoji">🚶</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Pedestrian Boardwalk · Sculpture · Street Food · Free</span>
+        <p class="card-desc">The Malecón is a pedestrian-only boardwalk lined with iconic sculptures, street performers, boozy ice cream, and a rotating cast of vendors. Do it at dusk — light hits the bay perfectly and the whole city comes out 🌇. Start at the whale sculpture at the north end and walk south toward the Romantic Zone. Free, zero planning required. Combine with the Art Walk if it's a Wednesday evening (Oct–May).</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Pair with: PV Art Walk on Wednesday evenings (Oct–May) → same neighborhood</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · Any evening · Walk north to south · 1–2 hrs</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Malecon+Puerto+Vallarta" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/My+Mexican+Kitchen+cooking+class+Bucerias">
+        <div class="card-top">
+          <div class="card-name">My Mexican Kitchen — Cooking Class</div>
+          <div class="card-right"><span class="card-emoji">👨‍🍳</span><span class="rating">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Cooking Class · Market Tour · Bucerias · Hands-On</span>
+        <p class="card-desc">One of the most consistently praised food experiences in the area. Market tour of Bucerias followed by hands-on cooking class — you make the food, you eat the food 🌮. Run by local chef with deep roots in regional Nayarit cuisine. Small groups, personal attention. The kind of experience that actually teaches you something useful when you get home. Book ahead; spots fill fast.</p>
+        <div class="card-footer">
+          <span class="card-meta">~$100 USD · Half day · Bucerias · Book ahead · Small groups</span>
+          <a class="card-link" href="https://www.google.com/maps/search/My+Mexican+Kitchen+Bucerias" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/La+Cruz+de+Huanacaxtle+village+Nayarit">
+        <div class="card-top">
+          <div class="card-name">La Cruz de Huanacaxtle</div>
+          <div class="card-right"><span class="card-emoji">⛵</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Fishing Village · Marina · ~20 min North · Chill Half Day</span>
+        <p class="card-desc">Small fishing village turned expat haven with a beautiful modern marina — but the old-town streets and beachfront palapa restaurants are the draw. The famous Sunday Market doesn't start until November, but La Cruz is worth a wander any time 🐟. Grab lunch at one of the palapa spots near the pier (order the freshest thing they caught), walk the marina, done. Easy half-day from NV.</p>
+        <div class="card-footer">
+          <span class="card-meta">~20 min north · Free to explore · Sunday Market starts November</span>
+          <a class="card-link" href="https://www.google.com/maps/search/La+Cruz+de+Huanacaxtle+Nayarit" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-culture">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🎨 Culture & Food Tours · NV Field Guide by Zach</span>
+    <span>Art Walk opens October 🎉 · La Cruz Market starts November</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MAP
+══════════════════════════════════════ -->
+<div class="page" id="page-map">
+  <div id="map-container">
+    <div id="map"></div>
+    <div class="map-legend">
+      <span class="map-legend-title">NV Field Guide</span>
+      <div class="leg-item"><div class="leg-dot" style="background:#C4522A"></div>Restaurants</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1E6B6B"></div>Bars</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3A7D2C"></div>Nature</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#7041A8"></div>Culture</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MOST LIKED
+══════════════════════════════════════ -->
+<div class="page" id="page-top">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--rust)">❤️ Nuevo Vallarta Field Guide</div>
+      <h2 class="page-title">Most Liked</h2>
+      <p class="page-sub">Everything the family has hearted, ranked by total likes. Hit ❤️ on any spot — it'll move up the list. Backed by Google Sheets so everyone's votes count.</p>
+    </div>
+    <div class="page-header-right">All categories<br>Sorted by ❤️ votes<br>Yours stay saved</div>
+  </div>
+
+  <div style="padding: 1.75rem 3rem 0;">
+    <div class="liked-filters">
+      <button class="liked-filter-btn active" data-cat="all"        onclick="setTopFilter('all')">All</button>
+      <button class="liked-filter-btn"        data-cat="restaurant" onclick="setTopFilter('restaurant')">🍽 Restaurants</button>
+      <button class="liked-filter-btn"        data-cat="bar"        onclick="setTopFilter('bar')">🍹 Bars</button>
+      <button class="liked-filter-btn"        data-cat="nature"     onclick="setTopFilter('nature')">🌿 Nature</button>
+      <button class="liked-filter-btn"        data-cat="culture"    onclick="setTopFilter('culture')">🎨 Culture</button>
+    </div>
+  </div>
+
+  <div style="padding: 0.5rem 3rem 3rem;">
+    <div id="top-spots-list" style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div class="top-spot-empty">Loading spots…</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     ADD ENTRY BUTTON (fixed)
+══════════════════════════════════════ -->
+<button class="add-entry-btn" onclick="openModal()">＋ Add a Spot</button>
+
+<!-- ══════════════════════════════════════
+     ADD ENTRY MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">Add a Spot 📍</div>
+    <div class="modal-sub">Found somewhere sick? Search for it on Google Maps below — then paste the URL back to auto-grab the coordinates.</div>
+
+    <!-- ── STEP 1: SEARCH ── -->
+    <div class="modal-row">
+      <label class="modal-label">🔍 Step 1 — Search on Google Maps</label>
+      <div class="maps-search-row">
+        <input class="maps-search-input" id="m-search" placeholder="e.g. Mar y Sol Bucerias seafood" onkeydown="if(event.key==='Enter')searchMaps()" />
+        <button class="maps-search-btn" onclick="searchMaps()">Open Maps ↗</button>
+      </div>
+      <div class="maps-hint">
+        👆 Hits Google Maps in a new tab scoped to Nuevo Vallarta. Find your spot, copy the URL from the address bar, paste below. The URL has the lat/lng baked in.
+      </div>
+    </div>
+
+    <!-- ── STEP 2: PASTE URL ── -->
+    <div class="modal-row">
+      <label class="modal-label">🔗 Step 2 — Paste the Maps URL <span class="autofill-badge" id="coords-badge">✓ Coords grabbed!</span></label>
+      <div class="maps-url-row">
+        <input class="maps-url-input" id="m-maps-url" placeholder="Paste Google Maps URL here…" oninput="parseMapsUrl(this.value)" />
+        <button class="maps-parse-btn" id="extract-btn" onclick="parseMapsUrl(document.getElementById('m-maps-url').value)">Extract ↙</button>
+      </div>
+      <div class="maps-hint" id="maps-hint">
+        👆 Hits Google Maps in a new tab scoped to Nuevo Vallarta. Find your spot, copy the URL from the address bar, paste below. The URL has the lat/lng baked in.
+      </div>
+    </div>
+
+    <hr class="modal-divider" />
+
+    <!-- ── STEP 3: DETAILS ── -->
+    <div class="modal-row">
+      <label class="modal-label">Name * <span class="autofill-badge" id="name-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-name" placeholder="e.g. Mar y Sol" />
+    </div>
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Category * <span class="autofill-badge" id="cat-badge">✓ Auto-filled</span></label>
+        <select class="modal-select" id="m-cat">
+          <option value="restaurant">🍽️ Restaurant</option>
+          <option value="bar">🍹 Bar</option>
+          <option value="nature">🌿 Nature</option>
+          <option value="culture">🎨 Culture</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Emoji <span class="autofill-badge" id="emoji-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-emoji" placeholder="e.g. 🐠" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Vibe / Location Tag <span class="autofill-badge" id="vibe-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-vibe" placeholder="e.g. Beachfront · Bucerias · ~15 min north" />
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Description *</label>
+      <textarea class="modal-textarea" id="m-desc" placeholder="What's the deal with this place? Why should we go?"></textarea>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">💡 Pro Tip / Insider Detail</label>
+      <input class="modal-input" id="m-detail" placeholder="e.g. Go at sunset. Order ceviche + zarandeado." />
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">🏆 Must Order</label>
+      <input class="modal-input" id="m-order" placeholder="e.g. Fish tacos · Mango margarita" />
+    </div>
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Price <span class="autofill-badge" id="price-badge">✓ Auto-filled</span></label>
+        <select class="modal-select" id="m-price">
+          <option value="$">$ — Cheap</option>
+          <option value="$$">$$ — Mid</option>
+          <option value="$$$">$$$ — Splurge</option>
+          <option value="$$$$">$$$$ — Occasion</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Rating (e.g. ⭐ 4.7) <span class="autofill-badge" id="rating-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-rating" placeholder="⭐ 4.7" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Hours / Notes <span class="autofill-badge" id="hours-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-hours" placeholder="e.g. 9am–11pm · Closed Mon" />
+    </div>
+
+    <!-- Coordinates (auto-filled from URL parse, editable) -->
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Latitude <span class="autofill-badge" id="lat-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-lat" placeholder="e.g. 20.7515" />
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Longitude <span class="autofill-badge" id="lng-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-lng" placeholder="e.g. -105.3407" />
+      </div>
+    </div>
+
+    <!-- Maps link (auto-filled from paste) -->
+    <div class="modal-row">
+      <label class="modal-label">Google Maps Link <span class="autofill-badge" id="url-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-url" placeholder="https://maps.google.com/…" />
+    </div>
+
+    <div class="modal-row">
+      <label class="modal-label">Your Name</label>
+      <input class="modal-input" id="m-author" placeholder="e.g. Zach" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-submit" onclick="submitEntry()">Submit Spot →</button>
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+    <div class="modal-status" id="modal-status"></div>
+    <div class="modal-sheet-note">
+      Spots are reviewed before appearing · <a class="sheet-link" target="_blank">📊 View the sheet →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LIVE COMMUNITY SECTIONS (injected per page)
+══════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════
+     JS: ROUTER + MAP
+══════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════════════════════════
+//  NV FIELD GUIDE — CLIENT JS
+//  Replace YOUR_APPS_SCRIPT_URL with your deployed Apps Script URL
+// ══════════════════════════════════════════════════════════════
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkFhp4kSke-lUUjp0UsbzT9NHbOEJy4wcGC1CRoOm24bzvijEUx_CUZGu6Kgh9pz_7mg/exec';
+const SHEET_URL       = 'https://docs.google.com/spreadsheets/d/1rty4an6ti6vxOzcsfwhm146REhckTlnNPt723wLoRkM/edit?usp=sharing';
+
+// ── SHEET LINKS ─────────────────────────────────
+function initSheetLinks() {
+  const valid = SHEET_URL && !SHEET_URL.includes('YOUR_GOOGLE_SHEET');
+  document.querySelectorAll('.sheet-link').forEach(a => {
+    if (valid) { a.href = SHEET_URL; a.classList.add('active'); }
+    else { a.removeAttribute('href'); a.classList.remove('active'); }
+  });
+}
+document.addEventListener('DOMContentLoaded', initSheetLinks);
+
+// ── ROUTER ──────────────────────────────────────
+let mapInstance = null;
+let enrichController = null;   // AbortController for in-flight enrichPlace fetches
+let _pageHistory = [];
+let _currentPage = 'home';
+
+function go(page, pushHistory = true) {
+  if (pushHistory && page !== _currentPage) {
+    _pageHistory.push(_currentPage);
+  }
+  _currentPage = page;
+  const backBtn = document.getElementById('nav-back-btn');
+  if (backBtn) backBtn.classList.toggle('visible', _pageHistory.length > 0);
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-page="${page}"]`);
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (page === 'map') {
+    setTimeout(function() {
+      if (!mapInstance) { initMap(); }
+      mapInstance.invalidateSize();
+    }, 250);
+  }
+  if (page === 'top') {
+    renderTopSpots();
+    loadTopComments();
+  }
+}
+
+function goBack() {
+  if (!_pageHistory.length) return;
+  const prev = _pageHistory.pop();
+  _currentPage = prev;
+  const backBtn = document.getElementById('nav-back-btn');
+  if (backBtn) backBtn.classList.toggle('visible', _pageHistory.length > 0);
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('page-' + prev);
+  if (el) el.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-page="${prev}"]`);
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (prev === 'map') {
+    setTimeout(function() {
+      if (!mapInstance) { initMap(); }
+      mapInstance.invalidateSize();
+    }, 250);
+  }
+  if (prev === 'top') {
+    renderTopSpots();
+    loadTopComments();
+  }
+}
+
+// Navigate to a section page and scroll to + highlight a specific card by name
+function goToCard(spotName, sectionPage) {
+  go(sectionPage);
+  // Small delay so the page renders before we scroll
+  setTimeout(() => {
+    const allCards = document.querySelectorAll(`#page-${sectionPage} .card`);
+    let target = null;
+    allCards.forEach(card => {
+      const nameEl = card.querySelector('.card-name');
+      if (nameEl && nameEl.textContent.trim() === spotName) target = card;
+    });
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.style.transition = 'box-shadow 0.3s, outline 0.3s';
+    target.style.outline = '2.5px solid var(--rust)';
+    target.style.boxShadow = '0 0 0 4px rgba(196,82,42,0.15)';
+    setTimeout(() => {
+      target.style.outline = '';
+      target.style.boxShadow = '';
+    }, 2200);
+  }, 120);
+}
+
+// ── MODAL ──────────────────────────────────────
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  // Cancel any in-flight enrichment
+  if (enrichController) { enrichController.abort(); enrichController = null; }
+  const extractBtn = document.getElementById('extract-btn');
+  if (extractBtn) { extractBtn.textContent = 'Extract ↙'; extractBtn.disabled = false; }
+
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('modal-status').style.display = 'none';
+  document.getElementById('modal-status').textContent = '';
+  // Clear all autofill badges
+  ['coords-badge','name-badge','lat-badge','lng-badge','url-badge',
+   'cat-badge','emoji-badge','vibe-badge','price-badge','rating-badge','hours-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+}
+
+// ── MAPS SEARCH ──────────────────────────────────────
+function searchMaps() {
+  const query = document.getElementById('m-search').value.trim();
+  if (!query) { alert('Type a place name first!'); return; }
+  // Auto-fill name field from search query if empty
+  const nameField = document.getElementById('m-name');
+  if (!nameField.value.trim()) {
+    nameField.value = query;
+    flashBadge('name-badge');
+  }
+  // Open Google Maps scoped to Nuevo Vallarta / Banderas Bay area
+  const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query + ' Nuevo Vallarta Nayarit Mexico')}/@20.710,-105.295,12z`;
+  window.open(searchUrl, '_blank');
+}
+
+// ── PARSE MAPS URL → EXTRACT LAT/LNG + LINK ──────────────────
+function parseMapsUrl(url) {
+  if (!url || url.length < 10) return;
+
+  const hintEl = document.getElementById('maps-hint');
+
+  // Short-link detection — these redirect URLs have no coords baked in
+  if (/maps\.app\.goo\.gl|goo\.gl\/maps/.test(url)) {
+    document.getElementById('m-maps-url').style.borderColor = 'var(--rust)';
+    if (hintEl) hintEl.innerHTML = '⚠️ That\'s a short link — it won\'t contain coordinates. Open it in your browser first, then copy the full URL from the address bar and paste it here.';
+    return;
+  }
+  // Reset any previous error styling / hint
+  document.getElementById('m-maps-url').style.borderColor = '';
+  if (hintEl) hintEl.innerHTML = '👆 Paste the full address-bar URL after clicking on a specific place. The URL has the lat/lng baked in.';
+
+  let lat = null, lng = null;
+
+  // Pattern 1: /@lat,lng,zoom  (standard map view and place pages)
+  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (atMatch) { lat = atMatch[1]; lng = atMatch[2]; }
+
+  // Pattern 2: /place/.../@lat,lng
+  if (!lat) {
+    const placeMatch = url.match(/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (placeMatch) { lat = placeMatch[1]; lng = placeMatch[2]; }
+  }
+
+  // Pattern 3: ?q=lat,lng
+  if (!lat) {
+    const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (qMatch) { lat = qMatch[1]; lng = qMatch[2]; }
+  }
+
+  // Pattern 4: ll=lat,lng
+  if (!lat) {
+    const llMatch = url.match(/ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (llMatch) { lat = llMatch[1]; lng = llMatch[2]; }
+  }
+
+  // Pattern 5: maps.google.com/maps?q=lat,lng  (embed style)
+  if (!lat) {
+    const embedMatch = url.match(/maps\?.*q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (embedMatch) { lat = embedMatch[1]; lng = embedMatch[2]; }
+  }
+
+  // Pattern 6: !3d<lat>!4d<lng>  (data= segment)
+  if (!lat) {
+    const dataMatch = url.match(/!3d(-?\d+\.?\d+)!4d(-?\d+\.?\d+)/);
+    if (dataMatch) { lat = dataMatch[1]; lng = dataMatch[2]; }
+  }
+
+  // Pattern 7: !2d<lng>!3d<lat>  (embed pb= — reversed order)
+  if (!lat) {
+    const pbMatch = url.match(/!2d(-?\d+\.?\d+)!3d(-?\d+\.?\d+)/);
+    if (pbMatch) { lat = pbMatch[2]; lng = pbMatch[1]; }
+  }
+
+  if (lat && lng) {
+    document.getElementById('m-lat').value = lat;
+    document.getElementById('m-lng').value = lng;
+    flashBadge('lat-badge');
+    flashBadge('lng-badge');
+    flashBadge('coords-badge');
+  }
+
+  // Auto-fill the Maps URL field
+  const urlField = document.getElementById('m-url');
+  if (!urlField.value.trim() && url.startsWith('http')) {
+    urlField.value = url;
+    flashBadge('url-badge');
+  }
+
+  // Extract place name — /place/Name/ or /search/Name/
+  let extractedName = document.getElementById('m-name').value.trim();
+  if (!extractedName) {
+    const placeNameMatch = url.match(/\/place\/([^/@?]+)/);
+    const searchNameMatch = url.match(/\/search\/([^/@?]+)/);
+    const rawName = placeNameMatch ? placeNameMatch[1] : (searchNameMatch ? searchNameMatch[1] : null);
+    if (rawName) {
+      try { extractedName = decodeURIComponent(rawName).replace(/\+/g, ' ').trim(); }
+      catch (e) { extractedName = rawName.replace(/\+/g, ' ').trim(); }
+      document.getElementById('m-name').value = extractedName;
+      flashBadge('name-badge');
+    }
+  }
+
+  // Layer 2: infer emoji + category from name keywords (instant, no network)
+  if (extractedName) inferFromName(extractedName);
+
+  // Layer 3: Nominatim + backend enrichment (async)
+  if (lat && lng) enrichPlace(lat, lng, url);
+}
+
+// ── LAYER 2: INFER EMOJI + CATEGORY FROM NAME KEYWORDS ────────
+function inferFromName(name) {
+  const n = name.toLowerCase();
+  const emojiEl = document.getElementById('m-emoji');
+  const catEl   = document.getElementById('m-cat');
+
+  if (!emojiEl.value.trim()) {
+    let emoji = '';
+    if (/taco|taqueria/.test(n))                               emoji = '🌮';
+    else if (/mariscos|seafood|cevich|ostión|ostio/.test(n))  emoji = '🦞';
+    else if (/fish|pescado|camar|shrimp|langosta/.test(n))    emoji = '🐟';
+    else if (/sushi|japanese|japones/.test(n))                 emoji = '🍣';
+    else if (/pizza|italian/.test(n))                          emoji = '🍕';
+    else if (/coffee|café|cafe|espresso|brunch/.test(n))      emoji = '☕';
+    else if (/\bbar\b|pub|cantina|cerveza|cerveceria|brew/.test(n)) emoji = '🍻';
+    else if (/mezcal|tequila|cocktail|lounge/.test(n))        emoji = '🍹';
+    else if (/beach|playa/.test(n))                            emoji = '🏖️';
+    else if (/botanical|garden|jardín|jardin/.test(n))        emoji = '🌺';
+    else if (/waterfall|cascada/.test(n))                      emoji = '💧';
+    else if (/market|mercado/.test(n))                         emoji = '🛍️';
+    else if (/church|iglesia|cathedral/.test(n))               emoji = '⛪';
+    if (emoji) { emojiEl.value = emoji; flashBadge('emoji-badge'); }
+  }
+
+  if (catEl.value === 'restaurant') {
+    if (/\bbar\b|pub|cantina|lounge|nightclub|cerveceria|brewery/.test(n)) {
+      catEl.value = 'bar'; flashBadge('cat-badge');
+    } else if (/beach|playa|botanical|garden|waterfall|cascada|park|parque|cenote|laguna|mangrove/.test(n)) {
+      catEl.value = 'nature'; flashBadge('cat-badge');
+    } else if (/museum|museo|gallery|galería|church|iglesia|market|mercado|theater|teatro/.test(n)) {
+      catEl.value = 'culture'; flashBadge('cat-badge');
+    }
+  }
+}
+
+// ── LAYER 3: ASYNC ENRICHMENT — NOMINATIM + BACKEND ───────────
+async function enrichPlace(lat, lng, mapsUrl) {
+  // Cancel any previous in-flight enrichment
+  if (enrichController) enrichController.abort();
+  enrichController = new AbortController();
+  const signal = enrichController.signal;
+
+  const btn = document.getElementById('extract-btn');
+  if (btn) { btn.textContent = 'Fetching… ⏳'; btn.disabled = true; }
+
+  const jobs = [];
+
+  // Nominatim reverse geocode → area/neighborhood for vibe tag
+  jobs.push(
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en&zoom=16`, { signal })
+      .then(r => r.json())
+      .then(d => ({ src: 'nominatim', d }))
+      .catch(() => null)
+  );
+
+  // Backend proxy → rating, price, hours, place type (if backend is configured)
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    jobs.push(
+      fetch(`${APPS_SCRIPT_URL}?action=place_info&url=${encodeURIComponent(mapsUrl)}`, { signal })
+        .then(r => r.json())
+        .then(d => ({ src: 'backend', d }))
+        .catch(() => null)
+    );
+  }
+
+  const results = await Promise.all(jobs);
+
+  // If aborted (e.g. user submitted the form), discard results
+  if (signal.aborted) {
+    if (btn) { btn.textContent = 'Extract ↙'; btn.disabled = false; }
+    return;
+  }
+
+  results.forEach(res => {
+    if (!res) return;
+
+    if (res.src === 'nominatim' && res.d && res.d.address) {
+      const a = res.d.address;
+      if (!document.getElementById('m-vibe').value.trim()) {
+        const area = a.suburb || a.village || a.town || a.neighbourhood || a.hamlet || '';
+        const state = a.state || '';
+        if (area) {
+          document.getElementById('m-vibe').value = area + (state ? ', ' + state : '');
+          flashBadge('vibe-badge');
+        }
+      }
+    }
+
+    if (res.src === 'backend' && res.d && res.d.ok && res.d.data) {
+      const info = res.d.data;
+      if (info.name && !document.getElementById('m-name').value.trim()) {
+        document.getElementById('m-name').value = info.name;
+        flashBadge('name-badge');
+        inferFromName(info.name);
+      }
+      if (info.rating && !document.getElementById('m-rating').value.trim()) {
+        document.getElementById('m-rating').value = info.rating;
+        flashBadge('rating-badge');
+      }
+      if (info.price) {
+        const sel = document.getElementById('m-price');
+        if (Array.from(sel.options).some(o => o.value === info.price)) {
+          sel.value = info.price; flashBadge('price-badge');
+        }
+      }
+      if (info.hours && !document.getElementById('m-hours').value.trim()) {
+        document.getElementById('m-hours').value = info.hours;
+        flashBadge('hours-badge');
+      }
+      if (info.place_type && document.getElementById('m-cat').value === 'restaurant') {
+        const t = info.place_type.toLowerCase();
+        if (/bar|pub|cantina|lounge|nightclub/.test(t))           { document.getElementById('m-cat').value = 'bar';     flashBadge('cat-badge'); }
+        else if (/beach|park|garden|waterfall|nature/.test(t))   { document.getElementById('m-cat').value = 'nature';  flashBadge('cat-badge'); }
+        else if (/museum|gallery|church|market|theater/.test(t)) { document.getElementById('m-cat').value = 'culture'; flashBadge('cat-badge'); }
+      }
+    }
+  });
+
+  if (btn) { btn.textContent = 'Extract ↙'; btn.disabled = false; }
+}
+
+function flashBadge(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── SUBMIT NEW ENTRY ──────────────────────────────────────
+async function submitEntry() {
+  const name = document.getElementById('m-name').value.trim();
+  const desc = document.getElementById('m-desc').value.trim();
+  if (!name || !desc) {
+    alert('Name and description are required!'); return;
+  }
+
+  const payload = {
+    action:     'add_entry',
+    name,
+    category:   document.getElementById('m-cat').value,
+    emoji:      document.getElementById('m-emoji').value.trim() || '📍',
+    vibe_tag:   document.getElementById('m-vibe').value.trim(),
+    desc,
+    detail:     document.getElementById('m-detail').value.trim(),
+    must_order: document.getElementById('m-order').value.trim(),
+    price:      document.getElementById('m-price').value,
+    rating:     document.getElementById('m-rating').value.trim() || '⭐ ?',
+    hours:      document.getElementById('m-hours').value.trim(),
+    url:        document.getElementById('m-url').value.trim(),
+    lat:        document.getElementById('m-lat').value.trim(),
+    lng:        document.getElementById('m-lng').value.trim(),
+    added_by:   document.getElementById('m-author').value.trim() || 'Anonymous',
+  };
+
+  // Cancel any in-flight enrichment so it can't refill the form after we clear it
+  if (enrichController) { enrichController.abort(); enrichController = null; }
+
+  const btn = document.querySelector('.modal-submit');
+  const status = document.getElementById('modal-status');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      status.textContent = '✅ Spot added! It\'ll appear on the next page refresh.';
+      status.style.display = 'block'; status.style.color = 'var(--teal)';
+      // Clear all text/textarea fields
+      ['m-search','m-maps-url','m-name','m-emoji','m-vibe','m-desc',
+       'm-detail','m-order','m-hours','m-url','m-lat','m-lng','m-author','m-rating'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      // Reset select fields to defaults
+      document.getElementById('m-cat').value   = 'restaurant';
+      document.getElementById('m-price').value = '$';
+      // Reset URL input border styling
+      document.getElementById('m-maps-url').style.borderColor = '';
+      // Clear all autofill badges
+      ['coords-badge','name-badge','lat-badge','lng-badge','url-badge',
+       'cat-badge','emoji-badge','vibe-badge','price-badge','rating-badge','hours-badge'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('show');
+      });
+      // Reset extract button in case it got stuck
+      const extractBtn = document.getElementById('extract-btn');
+      if (extractBtn) { extractBtn.textContent = 'Extract ↙'; extractBtn.disabled = false; }
+      // Reload community cards after a moment
+      setTimeout(() => { loadSheetEntries(); }, 1500);
+    } else {
+      throw new Error(json.error || 'Unknown error');
+    }
+  } catch (err) {
+    status.textContent = '❌ Error: ' + err.message;
+    status.style.display = 'block'; status.style.color = 'var(--rust)';
+  }
+  btn.textContent = 'Submit Spot →'; btn.disabled = false;
+}
+
+// ── COMMENTS ──────────────────────────────────────
+function toggleComments(spotName, el) {
+  const section = el.closest('.comment-section');
+  const list = section.querySelector('.comment-list');
+  const form = section.querySelector('.comment-form');
+  const isOpen = list.classList.contains('open');
+
+  if (!isOpen) {
+    list.classList.add('open');
+    form.classList.add('open');
+    el.textContent = '▲ Hide comments';
+    loadComments(spotName, list);
+  } else {
+    list.classList.remove('open');
+    form.classList.remove('open');
+    el.textContent = '💬 Comments';
+  }
+}
+
+async function loadComments(spotName, listEl) {
+  listEl.innerHTML = '<div class="comment-empty">Loading…</div>';
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=comments&spot=${encodeURIComponent(spotName)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    const comments = json.comments;
+    if (!comments.length) {
+      listEl.innerHTML = '<div class="comment-empty">No comments yet — be first! 👇</div>';
+      return;
+    }
+    listEl.innerHTML = comments.map(c => {
+      const d = new Date(c.timestamp);
+      const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+      return `<div class="comment-item">
+        <span class="comment-author">${escHtml(c.author || 'Anon')}</span>
+        ${escHtml(c.comment)}
+        <span class="comment-date">· ${dateStr}</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="comment-empty">Couldn't load comments.</div>`;
+  }
+}
+
+async function submitComment(spotName, btn) {
+  const section = btn.closest('.comment-section');
+  const nameInput = section.querySelector('.c-name');
+  const textInput = section.querySelector('.c-text');
+  const author  = nameInput.value.trim() || 'Anonymous';
+  const comment = textInput.value.trim();
+  if (!comment) { alert('Write something first!'); return; }
+
+  btn.textContent = 'Posting…'; btn.disabled = true;
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'comment', spot_name: spotName, author, comment }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    textInput.value = '';
+    // Reload comments
+    const list = section.querySelector('.comment-list');
+    await loadComments(spotName, list);
+  } catch (err) {
+    alert('Error posting comment: ' + err.message);
+  }
+  btn.textContent = 'Post'; btn.disabled = false;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── LIKES ─────────────────────────────────────────────────────
+// In-memory like counts (loaded from Sheets on init)
+const likeCounts = {};
+
+function getLikeKey(spotName) { return 'nv_liked_' + spotName; }
+function hasLiked(spotName) { try { return localStorage.getItem(getLikeKey(spotName)) === '1'; } catch(e) { return false; } }
+function setLiked(spotName) { try { localStorage.setItem(getLikeKey(spotName), '1'); } catch(e) {} }
+function removeLiked(spotName) { try { localStorage.removeItem(getLikeKey(spotName)); } catch(e) {} }
+
+function likeButton(spotName) {
+  const safe = spotName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  const liked = hasLiked(spotName);
+  const count = likeCounts[spotName] || 0;
+  return `<button class="like-btn${liked ? ' liked' : ''}" onclick="toggleLike('${safe}', this)" title="${liked ? 'Remove like' : 'Like this spot'}">
+    ❤️ <span class="like-count">${count > 0 ? count : ''}</span>
+  </button>`;
+}
+
+function applyLikedState(btn, spotName) {
+  if (!btn) return;
+  const liked = hasLiked(spotName);
+  btn.classList.toggle('liked', liked);
+  const countEl = btn.querySelector('.like-count');
+  if (countEl) countEl.textContent = (likeCounts[spotName] || 0) > 0 ? (likeCounts[spotName] || 0) : '';
+}
+
+async function toggleLike(spotName, btn) {
+  const wasLiked = hasLiked(spotName);
+  // Optimistic update
+  if (wasLiked) {
+    removeLiked(spotName);
+    likeCounts[spotName] = Math.max(0, (likeCounts[spotName] || 0) - 1);
+  } else {
+    setLiked(spotName);
+    likeCounts[spotName] = (likeCounts[spotName] || 0) + 1;
+  }
+  // Update all like buttons for this spot on page
+  document.querySelectorAll('.like-btn').forEach(b => {
+    const card = b.closest('.card, .top-spot-card');
+    if (!card) return;
+    const nameEl = card.querySelector('.card-name, .top-spot-name');
+    if (nameEl && nameEl.textContent.trim() === spotName) applyLikedState(b, spotName);
+  });
+  // Sync Most Liked page if open
+  if (document.getElementById('page-top').style.display !== 'none' ||
+      document.getElementById('page-top').classList.contains('active')) {
+    renderTopSpots();
+  }
+  // Send to backend
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'like', spot_name: spotName, delta: wasLiked ? -1 : 1 }),
+    });
+    // Reload counts to stay in sync
+    await loadLikeCounts();
+  } catch(e) { /* offline — localStorage keeps state */ }
+}
+
+async function loadLikeCounts() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) return;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=likes`);
+    const json = await res.json();
+    if (!json.ok) return;
+    json.likes.forEach(row => {
+      likeCounts[row.spot_name] = parseInt(row.likes) || 0;
+    });
+    // Refresh all like buttons on page
+    document.querySelectorAll('.like-btn').forEach(btn => {
+      const card = btn.closest('.card, .top-spot-card');
+      if (!card) return;
+      const nameEl = card.querySelector('.card-name, .top-spot-name');
+      if (nameEl) applyLikedState(btn, nameEl.textContent.trim());
+    });
+  } catch(e) {}
+}
+
+// ── MOST LIKED PAGE ───────────────────────────────────────────
+let topFilter = 'all';
+
+function renderTopSpots() {
+  const container = document.getElementById('top-spots-list');
+  if (!container) return;
+
+  // Use unified _allEntries (hardcoded + sheet)
+  const allSpots = (window._allEntries || []).map(e => ({
+    name:   e.name,
+    cat:    e.category || e.cat,
+    desc:   e.desc,
+    rating: e.rating,
+  }));
+
+  // Filter
+  const filtered = topFilter === 'all' ? allSpots
+    : allSpots.filter(s => s.cat === topFilter);
+
+  // Sort by likes descending, then liked-by-me, then name
+  const sorted = filtered.slice().sort((a, b) => {
+    const la = likeCounts[a.name] || 0;
+    const lb = likeCounts[b.name] || 0;
+    if (lb !== la) return lb - la;
+    const ma = hasLiked(a.name) ? 1 : 0;
+    const mb = hasLiked(b.name) ? 1 : 0;
+    if (mb !== ma) return mb - ma;
+    return a.name.localeCompare(b.name);
+  });
+
+  if (!sorted.length) {
+    container.innerHTML = `<div class="top-spot-empty">No spots yet in this category.<br>Switch to "All" to see everything.</div>`;
+    return;
+  }
+
+  container.innerHTML = sorted.map((s, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+    const color = CAT_COLOR[s.cat] || '#888';
+    const count = likeCounts[s.name] || 0;
+    const liked = hasLiked(s.name);
+    const safeJsName = s.name.replace(/'/g, "\\'");
+    const catPageMap = { restaurant: 'restaurants', bar: 'bars', nature: 'nature', culture: 'culture' };
+    const sectionPage = catPageMap[s.cat] || 'home';
+    return `<div class="top-spot-card">
+      <div class="top-spot-rank ${rankClass}">#${rank}</div>
+      <div class="top-spot-body">
+        <div class="top-spot-clickable" onclick="goToCard('${safeJsName}', '${sectionPage}')" title="View full card">
+          <div class="top-spot-header">
+            <div class="top-spot-name">${escHtml(s.name)} <span class="top-spot-goto">↗</span></div>
+            <span class="top-spot-cat" style="background:${color}">${escHtml(s.cat)}</span>
+          </div>
+          <div class="top-spot-desc">${escHtml(s.desc || '')}</div>
+        </div>
+        <div class="top-spot-meta">
+          <button class="like-btn${liked ? ' liked' : ''}" onclick="toggleLike('${safeJsName}', this)">
+            ❤️ <span class="like-count">${count > 0 ? count : ''}</span>
+          </button>
+          ${s.rating ? `<span class="rating" style="font-size:0.56rem;">${escHtml(s.rating)}</span>` : ''}
+        </div>
+        <div class="top-spot-comments">
+          <div class="top-spot-comment-list" data-spot="${escHtml(s.name)}">
+            <div class="comment-empty">Loading comments…</div>
+          </div>
+          <div class="comment-form" style="margin-top:0.5rem;">
+            <input class="c-name" placeholder="Your name (optional)" style="width:100%;font-family:'Space Mono',monospace;font-size:0.6rem;background:var(--sand);border:1px solid var(--border);color:var(--ink);padding:0.35rem 0.5rem;margin-bottom:0.35rem;outline:none;" />
+            <textarea class="c-text" placeholder="Leave a note about ${escHtml(s.name)}…" rows="2" style="width:100%;font-family:'Space Mono',monospace;font-size:0.6rem;background:var(--sand);border:1px solid var(--border);color:var(--ink);padding:0.35rem 0.5rem;resize:none;outline:none;margin-bottom:0.35rem;"></textarea>
+            <button class="comment-submit" onclick="submitTopComment('${safeJsName}', this)">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setTopFilter(cat) {
+  topFilter = cat;
+  document.querySelectorAll('.liked-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  renderTopSpots();
+  loadTopComments();
+}
+
+// Auto-loads comments into all .top-spot-comment-list elements
+async function loadTopComments() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    document.querySelectorAll('.top-spot-comment-list').forEach(el => {
+      el.innerHTML = '<div class="comment-empty">Set up backend to see comments.</div>';
+    });
+    return;
+  }
+  const lists = document.querySelectorAll('.top-spot-comment-list');
+  await Promise.all(Array.from(lists).map(async listEl => {
+    const spotName = listEl.dataset.spot;
+    if (!spotName) return;
+    try {
+      const url = `${APPS_SCRIPT_URL}?action=comments&spot=${encodeURIComponent(spotName)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      const comments = json.comments || [];
+      if (!comments.length) {
+        listEl.innerHTML = '<div class="comment-empty">No comments yet — be first! 👇</div>';
+        return;
+      }
+      listEl.innerHTML = comments.map(c => {
+        const d = new Date(c.timestamp);
+        const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+        return `<div class="comment-item">
+          <span class="comment-author">${escHtml(c.author || 'Anon')}</span>
+          ${escHtml(c.comment)}
+          <span class="comment-date">· ${dateStr}</span>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      listEl.innerHTML = '<div class="comment-empty">Couldn\'t load comments.</div>';
+    }
+  }));
+}
+
+async function submitTopComment(spotName, btn) {
+  const form = btn.closest('.comment-form');
+  const nameInput = form.querySelector('.c-name');
+  const textInput = form.querySelector('.c-text');
+  const author  = nameInput.value.trim() || 'Anonymous';
+  const comment = textInput.value.trim();
+  if (!comment) { alert('Write something first!'); return; }
+  btn.textContent = 'Posting…'; btn.disabled = true;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'comment', spot_name: spotName, author, comment }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    textInput.value = '';
+    btn.textContent = 'Post'; btn.disabled = false;
+    // Reload just this card's comment list
+    const card = btn.closest('.top-spot-card');
+    const listEl = card ? card.querySelector('.top-spot-comment-list') : null;
+    if (listEl) {
+      const url = `${APPS_SCRIPT_URL}?action=comments&spot=${encodeURIComponent(spotName)}`;
+      const r2 = await fetch(url);
+      const j2 = await r2.json();
+      if (j2.ok && j2.comments.length) {
+        listEl.innerHTML = j2.comments.map(c => {
+          const d = new Date(c.timestamp);
+          const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+          return `<div class="comment-item">
+            <span class="comment-author">${escHtml(c.author || 'Anon')}</span>
+            ${escHtml(c.comment)}
+            <span class="comment-date">· ${dateStr}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+  } catch(err) {
+    alert('Error posting comment: ' + err.message);
+    btn.textContent = 'Post'; btn.disabled = false;
+  }
+}
+
+// ── COMMENT WIDGET HTML ──────────────────────────────────────
+function commentWidget(spotName) {
+  const safe = escHtml(spotName);
+  const jsName = spotName.replace(/'/g,"\\'");
+  return `<div class="comment-section">
+    <div class="comment-section-bar">
+      <button class="like-btn" onclick="toggleLike('${jsName}', this)">❤️ <span class="like-count"></span></button>
+      <button class="comment-toggle" onclick="toggleComments('${jsName}', this)">💬 Comments</button>
+    </div>
+    <div class="comment-list"></div>
+    <div class="comment-form">
+      <input class="c-name" placeholder="Your name (optional)" style="width:100%;font-family:'Space Mono',monospace;font-size:0.6rem;background:var(--sand);border:1px solid var(--border);color:var(--ink);padding:0.35rem 0.5rem;margin-bottom:0.35rem;outline:none;" />
+      <textarea class="c-text" placeholder="Leave a note about ${safe}…" rows="2" style="width:100%;font-family:'Space Mono',monospace;font-size:0.6rem;background:var(--sand);border:1px solid var(--border);color:var(--ink);padding:0.35rem 0.5rem;resize:none;outline:none;margin-bottom:0.35rem;"></textarea>
+      <button class="comment-submit" onclick="submitComment('${jsName}', this)">Post</button>
+    </div>
+  </div>`;
+}
+
+// ── LOAD SHEET ENTRIES + RENDER ──────────────────────────────
+const CAT_COLOR = {
+  restaurant: '#C4522A',
+  bar:        '#1E6B6B',
+  nature:     '#3A7D2C',
+  culture:    '#7041A8',
+};
+
+const CAT_EMOJI = {
+  restaurant: '🍽️', bar: '🍹', nature: '🌿', culture: '🎨',
+};
+
+const CAT_PAGE = {
+  restaurant: 'restaurants', bar: 'bars', nature: 'nature', culture: 'culture',
+};
+
+function renderEntryCard(e) {
+  const color     = CAT_COLOR[e.category] || '#888';
+  const isTop     = parseFloat((e.rating||'').replace(/[^0-9.]/g,'')) >= 4.8;
+  const ratingClass = isTop ? 'rating top' : 'rating';
+  const url       = e.url || `https://www.google.com/maps/search/${encodeURIComponent(e.name)}`;
+  const mapsLabel = e.url ? '↗ Site' : '↗ Maps';
+  const safeUrl   = escHtml(url);
+  const jsName    = e.name.replace(/'/g,"\\'");
+
+  return `<div class="card" data-maps-url="${safeUrl}" style="border-color:${color}20;border-left:3px solid ${color};">
+    <div class="card-top">
+      <div class="card-name">${escHtml(e.name)}</div>
+      <div class="card-right">
+        <span class="card-emoji">${escHtml(e.emoji||CAT_EMOJI[e.category]||'📍')}</span>
+        ${e.rating ? `<span class="${ratingClass}">${escHtml(e.rating)}</span>` : ''}
+      </div>
+    </div>
+    ${e.vibe_tag ? `<span class="vibe-tag">${escHtml(e.vibe_tag)}</span>` : ''}
+    <p class="card-desc">${escHtml(e.desc||'')}</p>
+    ${e.detail ? `<div class="card-tip">💡 ${escHtml(e.detail)}</div>` : ''}
+    ${e.must_order ? `<div class="must-order">🏆 ${escHtml(e.must_order)}</div>` : ''}
+    <div class="card-footer">
+      <span class="card-meta">${escHtml([e.price, e.hours].filter(Boolean).join(' · '))}</span>
+      <a class="card-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${mapsLabel}</a>
+    </div>
+    ${commentWidget(e.name)}
+  </div>`;
+}
+
+// ── ALL ENTRIES (hardcoded + sheet) — single source of truth ──
+// Built after places array is defined and sheet entries load
+window._allEntries = [];
+
+function buildAllEntries(sheetEntries) {
+  // Start with hardcoded places, enriched with any extra HTML card data
+  const hardcoded = places.map(p => ({
+    name:     p.name,
+    category: p.cat,
+    lat:      p.lat,
+    lng:      p.lng,
+    desc:     p.desc,
+    detail:   p.detail,
+    rating:   p.rating,
+    emoji:    p.emoji || '',
+    url:      p.url   || '',
+    source:   'hardcoded',
+  }));
+
+  // Sheet entries that aren't already in hardcoded (by name)
+  const hardcodedNames = new Set(hardcoded.map(e => e.name.toLowerCase()));
+  const sheetOnly = (sheetEntries || []).filter(e =>
+    !hardcodedNames.has((e.name||'').toLowerCase())
+  ).map(e => ({ ...e, source: 'sheet' }));
+
+  window._allEntries = [...hardcoded, ...sheetOnly];
+  window._sheetEntries = sheetEntries || [];
+}
+
+async function loadSheetEntries() {
+  const containers = {
+    restaurant: document.getElementById('live-restaurants'),
+    bar:        document.getElementById('live-bars'),
+    nature:     document.getElementById('live-nature'),
+    culture:    document.getElementById('live-culture'),
+  };
+
+  // Build from hardcoded first so Most Liked works offline
+  buildAllEntries([]);
+
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+
+  Object.values(containers).forEach(c => {
+    if (c) c.innerHTML = '<div class="loading-cards">Loading community spots…</div>';
+  });
+
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=entries`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    buildAllEntries(json.entries);
+
+    const byCategory = { restaurant: [], bar: [], nature: [], culture: [] };
+    // Only render sheet-only entries in the "community" sections
+    (json.entries || []).forEach(e => {
+      if (byCategory[e.category]) byCategory[e.category].push(e);
+    });
+
+    Object.entries(byCategory).forEach(([cat, entries]) => {
+      const el = containers[cat];
+      if (!el) return;
+      if (!entries.length) {
+        el.innerHTML = '<div class="loading-cards" style="font-style:italic;color:var(--dim)">No community spots yet — add one! ↘</div>';
+        return;
+      }
+      el.innerHTML = entries.map(renderEntryCard).join('');
+      // Inject widgets into newly rendered cards
+      el.querySelectorAll('.card').forEach(card => {
+        const nameEl = card.querySelector('.card-name');
+        if (!nameEl) return;
+        const spotName = nameEl.textContent.trim();
+        if (!card.querySelector('.comment-section')) {
+          const widget = document.createElement('div');
+          widget.innerHTML = commentWidget(spotName);
+          card.appendChild(widget.firstElementChild);
+        }
+        // Apply like state
+        const likeBtn = card.querySelector('.like-btn');
+        if (likeBtn) applyLikedState(likeBtn, spotName);
+      });
+      // Push to map data
+      entries.forEach(e => {
+        if (e.lat && e.lng && !places.find(p => p.name === e.name)) {
+          places.push({
+            name: e.name, cat: e.category,
+            lat: parseFloat(e.lat), lng: parseFloat(e.lng),
+            desc: e.desc, detail: e.detail, rating: e.rating,
+          });
+        }
+      });
+    });
+
+    // Refresh Most Liked if it's active
+    if (document.getElementById('page-top').classList.contains('active')) {
+      renderTopSpots();
+      loadTopComments();
+    }
+  } catch (err) {
+    Object.values(containers).forEach(c => {
+      if (c) c.innerHTML = `<div class="loading-cards" style="color:var(--rust)">Couldn't load community spots. (${err.message})</div>`;
+    });
+  }
+}
+
+// ── MAP DATA ──────────────────────────────────────
+
+const places = [
+  // RESTAURANTS
+  { name:'Mar y Sol',                 cat:'restaurant', lat:20.7515, lng:-105.3407, desc:'🐠 Definitive Pescado Zarandeado spot. Beachfront, feet in sand, sunset views.', detail:'Go at sunset. Order ceviche + zarandeado.', rating:'⭐ 4.8' },
+  { name:'El Marlín de Tepic',        cat:'restaurant', lat:20.6990, lng:-105.2945, desc:'🦑 Local seafood spot tourists miss. Free tequila shot per table.', detail:'Always busy = always fresh.', rating:'⭐ 4.6' },
+  { name:'The Blue Shrimp',           cat:'restaurant', lat:20.7012, lng:-105.3002, desc:'🦐 Lagoon-side dining. Biggest shrimp in Banderas Bay.', detail:'Spot crocs and herons from your table.', rating:'⭐ 4.5' },
+  { name:'El Rincón de Ensenada',     cat:'restaurant', lat:20.7490, lng:-105.3378, desc:'🌮 Best fish tacos in Bucerias. Cash only. Marlin burrito is a sleeper hit.', detail:'Near the beach. Eat here twice.', rating:'⭐ 4.7' },
+  { name:'Luna Luna',                 cat:'restaurant', lat:20.7506, lng:-105.3390, desc:'🌙 Local breakfast institution, 15+ years. Huevos rancheros are iconic.', detail:'Pair with Bucerias Monday Market.', rating:'⭐ 4.9' },
+  { name:'Tacos de Barbacoa Don Javier', cat:'restaurant', lat:20.7120, lng:-105.3080, desc:'🌯 Perfect 5.0. Barely discovered. Weekend mornings only.', detail:'Ask locals for the exact spot.', rating:'⭐ 5.0' },
+  { name:'Sukha Beach House',         cat:'restaurant', lat:20.7562, lng:-105.3432, desc:'🏄 All-day 2-for-1 margaritas. Grilled rosemary octopus.', detail:'North end of Bucerias, Playa Los Picos.', rating:'⭐ 4.6' },
+  { name:'Loma 42 Bahía',             cat:'restaurant', lat:20.7050, lng:-105.2988, desc:'🔥 Top 100 restaurants in Mexico. Wood-fires everything.', detail:'Reserve on OpenTable. Beet/pear salad is mandatory.', rating:'⭐ 4.7' },
+  { name:'Cosecha Farm to Table',     cat:'restaurant', lat:20.7482, lng:-105.3362, desc:'🌱 #1 in Bahia de Banderas. Perfect 5.0. Hyper-seasonal tasting menu.', detail:'Reservation required. Dinner only.', rating:'⭐ 5.0' },
+  { name:'La Casa by Thierry Blouet', cat:'restaurant', lat:20.7468, lng:-105.3348, desc:'👨‍🍳 Legendary PV chef. Red snapper is the must-order.', detail:'Special occasion energy. Reserve ahead.', rating:'⭐ 4.9' },
+  { name:'Trattoria Toscana Mia',     cat:'restaurant', lat:20.7472, lng:-105.3356, desc:'🍝 Tuscan family since 2008. Free homemade limoncello at the end.', detail:'Tiny — 12 tables. Arrive early.', rating:'⭐ 4.7' },
+  { name:'Fat Boy Seafood',           cat:'restaurant', lat:20.7488, lng:-105.3372, desc:'🦞 Beachfront, locals-approved. Generous portions, lobster platter, stuffed shrimp.', detail:'Bacon-wrapped cheese shrimp = crowd favorite.', rating:'⭐ 4.6' },
+  { name:"Armando's Place",           cat:'restaurant', lat:20.7502, lng:-105.3385, desc:'🐙 Sea-to-table Bucerias. Menu changes daily based on La Cruz fish market haul.', detail:'Message ahead for special requests.', rating:'⭐ 4.8' },
+  { name:"Eddie's Nopal Beach",       cat:'restaurant', lat:20.7060, lng:-105.2992, desc:'🏖️ NV beach landmark. Lebanese-Mexican fusion. Family-run for decades.', detail:'All-day, all meals. Walk-in friendly.', rating:'⭐ 4.5' },
+  { name:'Asador La Vaca Argentina',  cat:'restaurant', lat:20.7038, lng:-105.2965, desc:'🥩 Genuine Argentine gaucho chef. Novillo beef, 18°C wine cave.', detail:'One of OpenTable\'s Diners\' Choice picks for NV.', rating:'⭐ 4.7' },
+  { name:'Mikoh',                     cat:'restaurant', lat:20.7496, lng:-105.3379, desc:'🍱 Japanese sushi + robata in Bucerias golden zone. Weekend DJs.', detail:'Robata grill is the standout. Book ahead.', rating:'⭐ 4.7' },
+  { name:'Faro Grill',                cat:'restaurant', lat:20.7398, lng:-105.3698, desc:'🔭 Waterfront dining in La Cruz fishing village. Beach + golf cart arrival.', detail:'Last seating 8:45pm. Arrive 15 min early for the experience.', rating:'⭐ 4.8' },
+
+  // BARS
+  { name:'Tropicalito Cantina Marina', cat:'bar', lat:20.7032, lng:-105.2962, desc:'🎶 Best cocktails in the marina. Vinyl DJ, killer tuna taco.', detail:'Closed Mon. Opens 4pm.', rating:'⭐ 4.7' },
+  { name:'Sky Bar Copan',             cat:'bar', lat:20.7058, lng:-105.2977, desc:'🌅 Rooftop sunset bar at Paradise Village. Book the sunset slot.', detail:'Food is mid. Views are the point.', rating:'⭐ 4.4' },
+  { name:"Guicho's Sports Bar",       cat:'bar', lat:20.7008, lng:-105.2954, desc:'🏆 Highest rated bar in the area. Any sport, they\'ll find it.', detail:'Closed Mondays.', rating:'⭐ 4.9' },
+  { name:'The Wine Corner by VINESP', cat:'bar', lat:20.7040, lng:-105.2968, desc:'🍷 No TVs. Spanish wine. 50-peso happy hour pours.', detail:'Pre-dinner at Loma 42 next door = perfection.', rating:'⭐ 4.9' },
+  { name:'La Catrina',                cat:'bar', lat:20.7018, lng:-105.2972, desc:'💀 Beer garden + fresh seafood. Colorful, loud, locals already know.', detail:'Go before it blows up.', rating:'⭐ 4.9' },
+  { name:'No Soy Juan',               cat:'bar', lat:20.7043, lng:-105.2974, desc:'🎸 Live music, creative cocktails, blue-corn pork tacos.', detail:'Best for a full night out on the strip.', rating:'⭐ 4.7' },
+  { name:'Vallarta Beer Garden',      cat:'bar', lat:20.7005, lng:-105.2950, desc:'🍺 Expat HQ. Craft beer, pool, ping pong, live music.', detail:'240+ reviews. Still earns every star.', rating:'⭐ 4.5' },
+  { name:'The Drunken Duck Cantina',  cat:'bar', lat:20.7036, lng:-105.2966, desc:'🦆 Opens 8am. Big screens, live band nightly, salsa dancing + poutine.', detail:'Bacon-wrapped shrimp is reportedly life-changing.', rating:'⭐ 4.4' },
+  { name:'Cervecería Chapultepec',    cat:'bar', lat:20.7042, lng:-105.2971, desc:'💸 ~18 peso items. Salsa bar justifies it. Open till 1:30am.', detail:'Final destination energy.', rating:'⭐ 4.3' },
+  { name:'Luxxe Bar',                 cat:'bar', lat:20.7062, lng:-105.2982, desc:'🥃 Tequila + mezcal specialist. Jazz trios. Ask for Jose.', detail:'Vidanta resort access or day pass required.', rating:'⭐ 4.7' },
+  { name:'Cervecería Buclas',         cat:'bar', lat:20.7512, lng:-105.3400, desc:'🍻 Nayarit craft brewery. IPA, stout, lager. Happy hour 5–7pm.', detail:'Beer garden opened 2023. Burger is legit.', rating:'⭐ 4.6' },
+  { name:'Jax Bar & Grill',           cat:'bar', lat:20.7508, lng:-105.3392, desc:'🎵 Live music almost daily. Weekly trivia nights. Bucerias.', detail:'One drink turns into three hours. Classic.', rating:'⭐ 4.5' },
+  { name:'Luna Lounge',               cat:'bar', lat:20.7540, lng:-105.3420, desc:'🎭 Cabaret, drag shows, musical tributes. Bucerias.', detail:'Check schedule ahead. VIP seating available.', rating:'⭐ 4.6' },
+  { name:'Bestia Night Club',         cat:'bar', lat:20.7048, lng:-105.2978, desc:'🔊 NV\'s serious nightclub. Top-tier sound system. Goes late.', detail:'Check IG for DJ lineups and events.', rating:'⭐ 4.4' },
+
+  // NATURE
+  { name:'El Cora Crocodile Sanctuary', cat:'nature', lat:20.7452, lng:-105.3312, desc:'🐊 Biologist-led croc tours. Night of Legends: last Saturday/month.', detail:'~250 pesos. Night tour is special.', rating:'⭐ 4.7' },
+  { name:'Vallarta Botanical Gardens', cat:'nature', lat:20.5650, lng:-105.2752, desc:'🌸 300+ orchids, butterfly sanctuary, river swimming hole.', detail:'October = peak green. Orange bus from PV.', rating:'⭐ 4.7' },
+  { name:'Bioluminescent Night Kayaking', cat:'nature', lat:20.5582, lng:-105.2362, desc:'✨ Paddle glows blue. October = peak bioluminescence season.', detail:'Book with Mismaloya Xtreme. Dusk departure.', rating:'⭐ 4.8' },
+  { name:'Quimixto Waterfall Hike',   cat:'nature', lat:20.4852, lng:-105.2152, desc:'💦 Water taxi + jungle hike to hidden waterfall. Falls at full flow in Oct.', detail:'Bring snacks + picnic. You\'ll want to stay.', rating:'⭐ 4.6' },
+  { name:'Nuevo Ixtlan Hot Springs',  cat:'nature', lat:20.8452, lng:-104.9202, desc:'♨️ Private stone tubs under jungle canopy. 60 pesos. Zero tourists.', detail:'Book a guided day trip — BBQ lunch included.', rating:'⭐ 4.6' },
+  { name:'Sea Turtle Release',        cat:'nature', lat:20.7100, lng:-105.3000, desc:'🐢 October = peak hatchling season. Baby turtles released into the ocean at sunset.', detail:'Explora Vallarta has the best guided version. Also check your resort.', rating:'⭐ 4.9' },
+  { name:'Marietas Islands Hidden Beach', cat:'nature', lat:20.7052, lng:-105.5932, desc:'🏝️ UNESCO Biosphere. Hidden beach inside a volcanic crater. 116 visitors/day max.', detail:'Book 2–3 days ahead. Departs La Cruz Marina. Closed Mon–Tue.', rating:'⭐ 4.9' },
+  { name:'Banderas Bay Sport Fishing', cat:'nature', lat:20.7032, lng:-105.2958, desc:'🎣 October = peak mahi-mahi + marlin season. Bay drops 900m — big fish close.', detail:'Book at marina directly, not through hotel — 30% cheaper.', rating:'⭐ 4.7' },
+  { name:'Monkey Mountain Hike',      cat:'nature', lat:20.8698, lng:-105.4012, desc:'🐒 45-min hike near Sayulita. 360° views of the bay, Punta Mita, and Sierra Madre.', detail:'October jungle = peak green after rainy season.', rating:'⭐ 4.6' },
+
+  // CULTURE
+  { name:'PV Art Walk',               cat:'culture', lat:20.6077, lng:-105.2397, desc:'🎨 Every Wednesday 6–10pm, Oct–May. Dozens of galleries, free entry.', detail:'October = opening week. Lucky timing.', rating:'⭐ 4.8' },
+  { name:'Bucerias Monday Market',    cat:'culture', lat:20.7498, lng:-105.3382, desc:'🛒 Every Monday 9am–1pm. Street food, crafts, live music.', detail:'Pair with Luna Luna breakfast next door.', rating:'⭐ 4.5' },
+  { name:'San Sebastián del Oeste',   cat:'culture', lat:20.7952, lng:-104.8682, desc:'🏘️ 1700s silver mining town. ~600 people. Cobblestones + colonial church.', detail:'Combine with hot springs for a full Sierra day.', rating:'⭐ 4.8' },
+  { name:'Pitillal Food Tour',        cat:'culture', lat:20.6282, lng:-105.2132, desc:'🌮 Deep-local PV barrio. 8 tasting spots in 3.5 hours.', detail:'Go guided — you\'ll miss the best spots solo.', rating:'⭐ 4.7' },
+  { name:'Rancho Primavera Cooking',  cat:'culture', lat:20.5902, lng:-105.2602, desc:'🫔 Family ranch: grind corn, make tortillas, horseback ride, eat it all.', detail:'Way better than a resort cooking class.', rating:'⭐ 4.7' },
+  { name:'Sayulita',                  cat:'culture', lat:20.8694, lng:-105.4005, desc:'🤙 Mexico\'s most famous boho surf town. Murals, tacos, surf breaks, indie boutiques.', detail:'Pair with Monkey Mountain hike for a full day.', rating:'⭐ 4.8' },
+  { name:'Rhythms of the Night',      cat:'culture', lat:20.7028, lng:-105.2955, desc:'🕯️ Sunset catamaran to Las Caletas. 3-course candlelit dinner + Indigenous show.', detail:'No electricity on the beach — intentionally. Very good.', rating:'⭐ 4.7' },
+  { name:'Punta Mita Village',        cat:'culture', lat:20.7742, lng:-105.4952, desc:'🏄 Real fishing village before the resort zone. Destiladeras beach is long + empty.', detail:'October = basically yours alone. Half day, rental car.', rating:'⭐ 4.6' },
+];
+
+// ── MAP INIT ──────────────────────────────────────
+function makePin(color) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:13px;height:13px;
+      background:${color};
+      border:2.5px solid rgba(255,255,255,0.95);
+      border-radius:50%;
+      box-shadow:0 1px 5px rgba(0,0,0,0.45);
+    "></div>`,
+    iconSize: [13,13],
+    iconAnchor: [6,6],
+    popupAnchor: [0,-9],
+  });
+}
+
+// ── INJECT LIKES + COMMENTS + MAPS LINK INTO ALL CARDS ───────
+function injectCommentWidgets() {
+  document.querySelectorAll('.card').forEach(card => {
+    const nameEl = card.querySelector('.card-name');
+    if (!nameEl) return;
+    const spotName = nameEl.textContent.trim();
+
+    const footer = card.querySelector('.card-footer');
+    if (footer) {
+      // Capture the inner card-link URL + label before removing it
+      const existingLink = footer.querySelector('.card-link');
+      const mapsUrl   = existingLink ? existingLink.href : (card.dataset.mapsUrl || '');
+      const mapsLabel = existingLink ? existingLink.textContent.trim()
+        : (mapsUrl.includes('google.com/maps') ? '↗ Maps' : '↗ Site');
+
+      // Remove existing card-link and any stale action rows / like buttons from footer
+      footer.querySelectorAll('.card-link, .card-action-row, .like-btn').forEach(el => el.remove());
+
+      // Only put the Maps/Site link in the footer — like button goes in comment bar below
+      if (mapsUrl) {
+        const mapsLink = document.createElement('a');
+        mapsLink.className = 'card-link';
+        mapsLink.href = mapsUrl;
+        mapsLink.target = '_blank';
+        mapsLink.rel = 'noopener noreferrer';
+        mapsLink.textContent = mapsLabel;
+        mapsLink.addEventListener('click', e => e.stopPropagation());
+        footer.appendChild(mapsLink);
+      }
+    }
+
+    // ── Inject comment section (contains like btn + comment toggle) ──
+    if (!card.querySelector('.comment-section')) {
+      const widget = document.createElement('div');
+      widget.innerHTML = commentWidget(spotName);
+      card.appendChild(widget.firstElementChild);
+    }
+    // Apply liked state to the like btn now inside comment-section-bar
+    const likeBtn = card.querySelector('.like-btn');
+    if (likeBtn) applyLikedState(likeBtn, spotName);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Build unified entry list immediately from hardcoded data
+  buildAllEntries([]);
+  // Inject like buttons + comments + maps links into all hardcoded cards
+  injectCommentWidgets();
+  // Load sheet entries (community spots) + merge into _allEntries
+  loadSheetEntries();
+  // Load like counts from Sheets
+  loadLikeCounts();
+});
+
+function initMap() {
+  mapInstance = L.map('map', {
+    center: [20.710, -105.295],
+    zoom: 12,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    maxZoom: 19,
+  }).addTo(mapInstance);
+
+  places.forEach(p => {
+    const color  = CAT_COLOR[p.cat];
+    const catLbl = p.cat.charAt(0).toUpperCase() + p.cat.slice(1);
+    const marker = L.marker([p.lat, p.lng], { icon: makePin(color) });
+    marker.bindPopup(`
+      <div style="font-family:'Space Mono',monospace;font-size:0.68rem;line-height:1.65;min-width:195px;max-width:230px;">
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#1A1209;margin-bottom:0.3rem;">${p.name}</div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="display:inline-block;font-size:0.46rem;letter-spacing:0.15em;text-transform:uppercase;background:${color};color:#fff;padding:0.12rem 0.4rem;border-radius:2px;">${catLbl}</span>
+          <span style="font-size:0.62rem;font-weight:700;background:#D4A843;color:#1A1209;padding:0.1rem 0.35rem;border-radius:2px;margin-left:0.3rem;">${p.rating}</span>
+        </div>
+        <div style="color:#3D2E1A;margin-bottom:0.45rem;">${p.desc}</div>
+        <div style="font-size:0.58rem;color:#1E6B6B;border-left:2px solid #1E6B6B;padding-left:0.4rem;line-height:1.55;">💡 ${p.detail}</div>
+      </div>
+    `, { maxWidth: 250 });
+    marker.addTo(mapInstance);
+  });
+}
+</script>
+
+</body>
+</html>
