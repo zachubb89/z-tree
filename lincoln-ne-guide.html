@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lincoln, NE — Field Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sand: #F0E8D0;
+  --ink: #1C1C28;
+  --rust: #B83030;
+  --teal: #2C6882;
+  --gold: #D4A030;
+  --mist: #E4DAC6;
+  --jungle: #3C6B36;
+  --card-bg: #FAF7EE;
+  --border: #C4B898;
+  --subdued: #5E4E38;
+  --dim: #7A6450;
+  --c-food: #B83030;
+  --c-bar: #2C6882;
+  --c-nature: #3C6B36;
+  --c-culture: #6E3FAA;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--sand);
+  color: var(--ink);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.45;
+}
+nav {
+  position: sticky; top: 0; z-index: 500;
+  background: var(--ink);
+  display: flex; align-items: stretch;
+  height: 52px;
+  border-bottom: 2px solid rgba(212,160,48,0.5);
+}
+.nav-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem; font-style: italic;
+  color: var(--gold);
+  padding: 0 1.75rem;
+  display: flex; align-items: center;
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.nav-brand:hover { color: #fff; }
+.nav-links {
+  display: flex; flex: 1;
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-btn {
+  background: none; border: none;
+  color: rgba(240,232,208,0.45);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 1.1rem;
+  white-space: nowrap; flex-shrink: 0;
+  position: relative;
+  transition: color 0.15s;
+}
+.nav-btn::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: transparent; transition: background 0.15s;
+}
+.nav-btn:hover { color: rgba(240,232,208,0.8); }
+.nav-btn.active { color: var(--sand); }
+.nav-btn.active[data-page="home"]::after    { background: var(--gold); }
+.nav-btn.active[data-page="restaurants"]::after { background: var(--c-food); }
+.nav-btn.active[data-page="bars"]::after    { background: var(--c-bar); }
+.nav-btn.active[data-page="nature"]::after  { background: var(--c-nature); }
+.nav-btn.active[data-page="culture"]::after { background: var(--c-culture); }
+.nav-btn.active[data-page="map"]::after     { background: var(--gold); }
+.nav-btn.active[data-page="top"]::after     { background: var(--rust); }
+.nav-back {
+  background: none; border: none;
+  color: rgba(240,232,208,0.55);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.08em;
+  cursor: pointer; padding: 0.4rem 0.6rem;
+  transition: color 0.15s;
+  display: none;
+  align-items: center; gap: 0.3rem;
+  flex-shrink: 0;
+}
+.nav-back:hover { color: var(--sand); }
+.nav-back.visible { display: flex; }
+.page { display: none; }
+.page.active { display: block; animation: fadeUp 0.2s ease both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.home-hero {
+  padding: 5rem 3rem 3.5rem;
+  border-bottom: 2px solid var(--ink);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4rem; align-items: end;
+}
+.hero-eyebrow {
+  font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--rust); margin-bottom: 1rem; display: block;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3.5rem, 8vw, 6.5rem);
+  line-height: 0.92; font-weight: 700;
+}
+.hero-title em { font-style: italic; color: var(--teal); }
+.hero-meta {
+  font-size: 0.62rem; line-height: 1.95; color: var(--subdued);
+  border-left: 2px solid var(--border); padding-left: 1.5rem;
+  max-width: 220px;
+}
+.hero-meta strong { color: var(--ink); display: block; margin-bottom: 0.3rem; font-size: 0.7rem; }
+.hero-meta em { color: var(--rust); font-style: normal; }
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.home-tile {
+  padding: 2.5rem 2.25rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative; overflow: hidden;
+}
+.home-tile:hover { background: var(--mist); }
+.home-tile:hover .tile-arrow { transform: translate(4px,-4px); }
+.tile-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: block; margin-bottom: 1.25rem;
+}
+.tile-icon { font-size: 1.8rem; display: block; margin-bottom: 1rem; }
+.tile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem; font-style: italic; margin-bottom: 0.3rem;
+}
+.tile-count {
+  font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--subdued); margin-bottom: 0.75rem;
+}
+.tile-desc { font-size: 0.62rem; line-height: 1.75; color: var(--subdued); }
+.tile-arrow {
+  position: absolute; bottom: 1.5rem; right: 1.75rem;
+  font-size: 0.7rem; color: var(--teal);
+  transition: transform 0.15s;
+}
+.page-header {
+  padding: 3.5rem 3rem 2.5rem;
+  border-bottom: 2px solid var(--ink);
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem;
+}
+.page-eyebrow {
+  font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-style: italic; line-height: 1;
+}
+.page-sub {
+  font-size: 0.62rem; color: var(--subdued); line-height: 1.85;
+  margin-top: 0.75rem; max-width: 440px;
+}
+.page-header-right {
+  font-size: 0.58rem; color: var(--dim); text-align: right;
+  line-height: 2; flex-shrink: 0;
+}
+.csection {
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid var(--border);
+}
+.csection-header {
+  display: flex; align-items: center; gap: 0.85rem;
+  margin-bottom: 0.4rem; flex-wrap: wrap;
+}
+.csection-emoji { font-size: 1.4rem; }
+.csection-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem; font-style: italic;
+}
+.csection-tag {
+  font-size: 0.52rem; letter-spacing: 0.2em; text-transform: uppercase;
+  background: var(--ink); color: var(--sand);
+  padding: 0.22rem 0.6rem; border-radius: 2px;
+}
+.csection-sub {
+  font-size: 0.62rem; color: var(--subdued); line-height: 1.8;
+  margin-bottom: 1.75rem; margin-top: 0.3rem; max-width: 560px;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.25rem;
+}
+.card {
+  border: 1.5px solid var(--ink);
+  background: var(--card-bg);
+  padding: 1.4rem;
+  display: block; color: inherit;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  position: relative;
+  cursor: default;
+}
+.card:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--ink); }
+.card-top {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;
+}
+.card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.08rem; font-weight: 700; line-height: 1.2; flex: 1;
+}
+.card-right { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.card-emoji { font-size: 1.05rem; }
+.rating {
+  font-size: 0.68rem; font-weight: 700;
+  background: var(--gold); color: var(--ink);
+  padding: 0.2rem 0.45rem; border-radius: 2px; white-space: nowrap;
+}
+.rating.top { background: var(--rust); color: #fff; }
+.vibe-tag {
+  display: inline-block; font-size: 0.5rem; letter-spacing: 0.15em;
+  text-transform: uppercase; border: 1px solid var(--border);
+  padding: 0.18rem 0.45rem; margin-bottom: 0.65rem;
+  color: var(--subdued); border-radius: 2px;
+}
+.card-desc { font-size: 0.67rem; line-height: 1.82; color: #3D2E1A; }
+.must-order {
+  display: block; font-size: 0.55rem;
+  background: #FFF8E6; border: 1px solid var(--gold);
+  color: #6B4C00; padding: 0.3rem 0.55rem;
+  border-radius: 2px; margin-top: 0.6rem; line-height: 1.5;
+}
+.nearby {
+  margin-top: 0.7rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(44,104,130,0.07);
+  border-left: 2px solid var(--teal);
+  font-size: 0.56rem; line-height: 1.65; color: var(--teal);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nearby:hover { background: rgba(44,104,130,0.14); }
+.card-footer {
+  margin-top: 0.9rem; padding-top: 0.7rem;
+  border-top: 1px solid var(--mist);
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 0.4rem;
+}
+.card-meta { font-size: 0.56rem; color: var(--dim); }
+.card-link {
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--teal); text-decoration: none;
+  border-bottom: 1px solid var(--teal); padding-bottom: 1px;
+  transition: opacity 0.1s;
+}
+.card-link:hover { opacity: 0.6; }
+.card-tip {
+  font-size: 0.58rem; color: var(--teal);
+  border-left: 2px solid var(--teal); padding-left: 0.4rem;
+  margin-top: 0.6rem; line-height: 1.55;
+}
+.card-action-row {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.notice {
+  border: 1.5px dashed var(--border); background: transparent;
+  padding: 1.1rem 1.4rem; font-size: 0.64rem; line-height: 1.8;
+  color: var(--subdued); font-style: italic; grid-column: 1/-1;
+}
+#map-container { height: calc(100vh - 52px); position: relative; }
+#map { width: 100%; height: 100%; }
+.map-legend {
+  position: absolute; bottom: 1.75rem; left: 1rem; z-index: 1000;
+  background: var(--ink); color: var(--sand);
+  padding: 1rem 1.3rem; border: 1px solid rgba(212,160,48,0.5);
+  font-size: 0.56rem; min-width: 150px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+}
+.map-legend-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 0.9rem; color: var(--gold);
+  display: block; margin-bottom: 0.85rem;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 0.55rem;
+  margin-bottom: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.site-footer {
+  padding: 1.75rem 3rem; font-size: 0.56rem; color: var(--dim);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 680px) {
+  .home-hero { grid-template-columns: 1fr; gap: 2rem; padding: 3rem 1.5rem 2rem; }
+  .hero-meta { max-width: 100%; border-left: none; border-top: 1px solid var(--border); padding: 1rem 0 0; }
+  .page-header { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
+  .csection { padding: 2rem 1.5rem; }
+  nav { padding: 0; }
+  .nav-brand { padding: 0 1rem; font-size: 0.85rem; }
+}
+.comment-section {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--mist);
+  padding-top: 0.75rem;
+}
+.comment-section-bar {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.comment-toggle {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--teal); padding: 0;
+  transition: opacity 0.15s;
+}
+.comment-toggle:hover { opacity: 0.65; }
+.comment-list { margin-top: 0.6rem; display: none; }
+.comment-list.open { display: block; }
+.comment-item {
+  font-size: 0.58rem; line-height: 1.7;
+  padding: 0.45rem 0;
+  border-bottom: 1px dotted var(--border);
+  color: var(--ink);
+}
+.comment-author { font-weight: 700; color: var(--rust); margin-right: 0.35rem; }
+.comment-date { color: var(--dim); font-size: 0.5rem; }
+.comment-form { margin-top: 0.6rem; display: none; }
+.comment-form.open { display: block; }
+.comment-form input,
+.comment-form textarea {
+  width: 100%; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; background: var(--sand);
+  border: 1px solid var(--border); color: var(--ink);
+  padding: 0.4rem 0.55rem; margin-bottom: 0.4rem;
+  resize: none; outline: none;
+  transition: border-color 0.15s;
+}
+.comment-form input:focus,
+.comment-form textarea:focus { border-color: var(--teal); }
+.comment-submit {
+  background: var(--teal); color: var(--sand);
+  border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.45rem 1rem;
+  transition: background 0.15s;
+}
+.comment-submit:hover { background: var(--ink); }
+.comment-empty { font-size: 0.56rem; color: var(--dim); font-style: italic; padding: 0.3rem 0; }
+.like-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: none; border: 1px solid var(--border);
+  cursor: pointer; padding: 0.2rem 0.55rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.08em;
+  color: var(--subdued); border-radius: 2px;
+  transition: all 0.15s; user-select: none;
+}
+.like-btn:hover { border-color: var(--rust); color: var(--rust); }
+.like-btn.liked { background: #FFF0EE; border-color: var(--rust); color: var(--rust); }
+.like-btn .like-count { font-weight: 700; }
+.top-spot-card {
+  border: 1.5px solid var(--ink);
+  background: var(--card-bg);
+  padding: 1.25rem 1.4rem;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0 1rem;
+  align-items: start;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.top-spot-card:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--ink); }
+.top-spot-rank {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-weight: 700; font-style: italic;
+  color: var(--border); padding-top: 0.1rem;
+  text-align: right;
+}
+.top-spot-rank.gold { color: var(--gold); }
+.top-spot-rank.silver { color: #A0A0A0; }
+.top-spot-rank.bronze { color: #C4522A; }
+.top-spot-body {}
+.top-spot-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem;
+}
+.top-spot-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700; line-height: 1.2;
+}
+.top-spot-cat {
+  font-size: 0.44rem; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 0.18rem 0.45rem; border-radius: 2px; color: #fff;
+  flex-shrink: 0; margin-top: 0.15rem;
+}
+.top-spot-desc { font-size: 0.62rem; line-height: 1.75; color: var(--subdued); margin-bottom: 0.5rem; }
+.top-spot-meta {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+}
+.top-spot-likes {
+  font-size: 0.56rem; font-weight: 700; color: var(--rust);
+  display: flex; align-items: center; gap: 0.2rem;
+}
+.top-spot-empty {
+  grid-column: 1/-1; text-align: center; padding: 3rem 1rem;
+  font-size: 0.65rem; color: var(--dim); font-style: italic; line-height: 2;
+}
+.top-spot-clickable {
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 0.15rem 0.25rem 0.25rem;
+  margin: -0.15rem -0.25rem 0.1rem;
+  transition: background 0.15s;
+}
+.top-spot-clickable:hover { background: rgba(184,48,48,0.07); }
+.top-spot-goto {
+  font-size: 0.55rem; color: var(--rust); opacity: 0;
+  transition: opacity 0.15s; margin-left: 0.2rem;
+}
+.top-spot-clickable:hover .top-spot-goto { opacity: 1; }
+.top-spot-comments {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--mist);
+}
+.top-spot-comment-list .comment-item {
+  font-size: 0.58rem; line-height: 1.7;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--mist);
+}
+.top-spot-comment-list .comment-item:last-child { border-bottom: none; }
+.top-spot-comment-list .comment-empty {
+  font-size: 0.56rem; color: var(--dim); font-style: italic; padding: 0.25rem 0;
+}
+.liked-filters {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.liked-filter-btn {
+  background: none; border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.3rem 0.75rem; cursor: pointer; color: var(--subdued);
+  transition: all 0.15s; border-radius: 2px;
+}
+.liked-filter-btn:hover { border-color: var(--ink); color: var(--ink); }
+.liked-filter-btn.active { background: var(--ink); color: var(--sand); border-color: var(--ink); }
+.maps-search-row {
+  display: flex; gap: 0.5rem; margin-bottom: 0.5rem;
+}
+.maps-search-input {
+  flex: 1; font-family: 'Space Mono', monospace;
+  font-size: 0.64rem; background: var(--sand);
+  border: 1.5px solid var(--teal); color: var(--ink);
+  padding: 0.5rem 0.65rem; outline: none;
+}
+.maps-search-input:focus { border-color: var(--ink); }
+.maps-search-btn {
+  background: var(--teal); color: #fff; border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.5rem 0.9rem; white-space: nowrap;
+  transition: background 0.15s;
+}
+.maps-search-btn:hover { background: var(--ink); }
+.maps-hint {
+  font-size: 0.54rem; color: var(--dim); line-height: 1.65;
+  padding: 0.5rem 0.7rem;
+  background: rgba(44,104,130,0.07);
+  border-left: 2px solid var(--teal);
+  margin-bottom: 0.9rem;
+}
+.maps-hint a { color: var(--teal); }
+.maps-url-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.maps-url-input {
+  flex: 1; font-family: 'Space Mono', monospace;
+  font-size: 0.58rem; background: var(--sand);
+  border: 1.5px solid var(--border); color: var(--ink);
+  padding: 0.45rem 0.6rem; outline: none;
+  transition: border-color 0.15s;
+}
+.maps-url-input:focus { border-color: var(--teal); }
+.maps-parse-btn {
+  background: var(--gold); color: var(--ink); border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.45rem 0.85rem; white-space: nowrap;
+  transition: background 0.15s;
+}
+.maps-parse-btn:hover { background: var(--rust); color: #fff; }
+.modal-divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 1rem 0 1.1rem;
+}
+.autofill-badge {
+  display: inline-block; font-size: 0.44rem; letter-spacing: 0.15em;
+  text-transform: uppercase; background: var(--teal); color: #fff;
+  padding: 0.1rem 0.4rem; border-radius: 2px; margin-left: 0.4rem;
+  vertical-align: middle; opacity: 0; transition: opacity 0.3s;
+}
+.autofill-badge.show { opacity: 1; }
+.add-entry-btn {
+  position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 900;
+  background: var(--rust); color: #fff;
+  border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.add-entry-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(28,28,40,0.75); backdrop-filter: blur(3px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card-bg); border: 2px solid var(--ink);
+  padding: 2rem 2.25rem; width: min(540px, 92vw); max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 8px 8px 0 var(--ink);
+  animation: fadeUp 0.18s ease both;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-style: italic; margin-bottom: 0.35rem;
+}
+.modal-sub { font-size: 0.6rem; color: var(--subdued); margin-bottom: 1.5rem; line-height: 1.7; }
+.modal-row { margin-bottom: 0.75rem; }
+.modal-label {
+  display: block; font-size: 0.52rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--subdued); margin-bottom: 0.25rem;
+}
+.modal-input, .modal-select, .modal-textarea {
+  width: 100%; font-family: 'Space Mono', monospace;
+  font-size: 0.64rem; background: var(--sand);
+  border: 1.5px solid var(--border); color: var(--ink);
+  padding: 0.5rem 0.65rem; outline: none;
+  transition: border-color 0.15s;
+}
+.modal-input:focus, .modal-select:focus, .modal-textarea:focus { border-color: var(--teal); }
+.modal-textarea { resize: vertical; min-height: 70px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+.modal-submit {
+  flex: 1; background: var(--rust); color: #fff; border: none;
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.7rem 1rem; transition: background 0.15s;
+}
+.modal-submit:hover { background: var(--ink); }
+.modal-cancel {
+  background: none; border: 1.5px solid var(--border); color: var(--subdued);
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.7rem 1rem; transition: border-color 0.15s, color 0.15s;
+}
+.modal-cancel:hover { border-color: var(--ink); color: var(--ink); }
+.modal-status { font-size: 0.6rem; margin-top: 0.75rem; color: var(--teal); display: none; }
+.modal-sheet-note {
+  font-size: 0.55rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dim); margin-top: 0.6rem; text-align: center;
+}
+.modal-sheet-note a { color: var(--teal); text-decoration: none; pointer-events: none; }
+.modal-sheet-note a.active { pointer-events: auto; }
+.modal-sheet-note a.active:hover { text-decoration: underline; }
+.footer-sheet-link {
+  color: var(--dim); text-decoration: none; letter-spacing: inherit;
+  pointer-events: none; opacity: 0.5;
+}
+.footer-sheet-link.active { pointer-events: auto; opacity: 1; color: var(--teal); }
+.live-section {
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid var(--border);
+}
+.live-section-header {
+  display: flex; align-items: center; gap: 0.85rem;
+  margin-bottom: 1.75rem; flex-wrap: wrap;
+}
+.live-badge {
+  font-size: 0.46rem; letter-spacing: 0.18em; text-transform: uppercase;
+  background: var(--teal); color: #fff;
+  padding: 0.2rem 0.55rem; border-radius: 2px;
+}
+.loading-cards {
+  font-size: 0.6rem; color: var(--dim); font-style: italic;
+  padding: 1rem 0;
+}
+@media (max-width: 680px) {
+  .add-entry-btn { bottom: 1rem; right: 1rem; font-size: 0.52rem; padding: 0.65rem 1rem; }
+  .modal { padding: 1.5rem; }
+  .modal-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand" onclick="go('home')">LNK Guide 🌽</span>
+  <button class="nav-back" id="nav-back-btn" onclick="goBack()">← Back</button>
+  <div class="nav-links">
+    <button class="nav-btn active" data-page="home"        onclick="go('home')">Home</button>
+    <button class="nav-btn"        data-page="restaurants" onclick="go('restaurants')">🍽 Restaurants</button>
+    <button class="nav-btn"        data-page="bars"        onclick="go('bars')">🍺 Bars</button>
+    <button class="nav-btn"        data-page="nature"      onclick="go('nature')">🌿 Nature</button>
+    <button class="nav-btn"        data-page="culture"     onclick="go('culture')">🎨 Culture</button>
+    <button class="nav-btn"        data-page="map"         onclick="go('map')">🗺 Map</button>
+    <button class="nav-btn"        data-page="top"         onclick="go('top')">❤️ Most Liked</button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="home-hero">
+    <div>
+      <span class="hero-eyebrow">🌽 Field Guide · Lancaster County · Lincoln, Nebraska</span>
+      <h1 class="hero-title">Lincoln,<br><em>Nebraska</em></h1>
+    </div>
+    <div class="hero-meta">
+      <strong>What is this?</strong>
+      A personal field guide to the best of Lincoln, NE. No chain-restaurant defaults, no filler, no "just go to Applebee's" energy.<br><br>
+      Sorted by category. Built from real research + local intel. Restaurants, bars, parks, culture — the whole city.<br><br>
+      Created by Zach Ubbelohde.<br><br>
+      <em>⚠ Hours vary — always verify before heading out.</em>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <div class="home-tile" onclick="go('restaurants')">
+      <span class="tile-dot" style="background:var(--c-food)"></span>
+      <span class="tile-icon">🍽️</span>
+      <div class="tile-name">Restaurants</div>
+      <div class="tile-count">22 spots · Brunch to splurge</div>
+      <div class="tile-desc">From the best Indian food in the Midwest to a Haymarket brunch institution that's been running longer than most of us have been alive.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('bars')">
+      <span class="tile-dot" style="background:var(--c-bar)"></span>
+      <span class="tile-icon">🍺</span>
+      <div class="tile-name">Bars</div>
+      <div class="tile-count">14 spots · Dive to craft</div>
+      <div class="tile-desc">A legendary blues bar, Nebraska's oldest dive, a world-class craft brewery, and the Haymarket strip that carries the whole city's nightlife.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('nature')">
+      <span class="tile-dot" style="background:var(--c-nature)"></span>
+      <span class="tile-icon">🌿</span>
+      <div class="tile-name">Nature & Parks</div>
+      <div class="tile-count">10 spots · Urban trails to prairie</div>
+      <div class="tile-desc">The largest municipal urban park in America, a nature center with bison and elk, gorgeous public gardens, and lake day trips within an hour.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('culture')">
+      <span class="tile-dot" style="background:var(--c-culture)"></span>
+      <span class="tile-icon">🎨</span>
+      <div class="tile-name">Culture & Events</div>
+      <div class="tile-count">12 spots · Capitol to Haymarket</div>
+      <div class="tile-desc">The most underrated state capitol building in America, a world-class art museum, the Railyard, the Farmer's Market, and more.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('map')">
+      <span class="tile-dot" style="background:var(--gold)"></span>
+      <span class="tile-icon">🗺️</span>
+      <div class="tile-name">Map View</div>
+      <div class="tile-count">All pins · Color-coded</div>
+      <div class="tile-desc">Everything on one map. See what's in the Haymarket, what's downtown, what's worth a drive. Plan your days geographically.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('top')">
+      <span class="tile-dot" style="background:var(--rust)"></span>
+      <span class="tile-icon">❤️</span>
+      <div class="tile-name">Most Liked</div>
+      <div class="tile-count">All spots · Ranked by votes</div>
+      <div class="tile-desc">Everything the group has hearted, sorted from most loved to least. Like something, it moves up the list.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🌽 Lincoln, NE Field Guide · By Zach</span>
+    <span>Ratings via Google Maps · No affiliation · No sponsored placements</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+<!-- RESTAURANTS -->
+<div class="page" id="page-restaurants">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-food)">🍽️ Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Restaurants</h2>
+      <p class="page-sub">Lincoln punches above its weight for food. The Haymarket and downtown O Street corridor have the density — but some of the best spots are scattered across the city. Local-first, no chains.</p>
+    </div>
+    <div class="page-header-right">By Zach<br>Local-first<br>No chain defaults</div>
+  </div>
+
+  <!-- BREAKFAST & BRUNCH -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">☀️</span>
+      <h3 class="csection-label">Breakfast & Brunch</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Morning Fuel</span>
+    </div>
+    <p class="csection-sub">Lincoln's brunch game is serious. The Haymarket district has the highest concentration, but a few essential spots are dotted around the city. Get here early on weekends — waits are real.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/The+Green+Gateau+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">The Green Gateau</div>
+          <div class="card-right"><span class="card-emoji">🥐</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Breakfast · 330 S 10th St · Lincoln Institution</span>
+        <p class="card-desc">The Green Gateau has been a Lincoln breakfast institution for decades — the kind of place that regulars have gone to every Sunday for 20 years and intend to keep doing so forever 🥐. House-baked pastries, fresh quiches, creamy soups, and a brunch menu that's been quietly dialed-in to near-perfection. The building itself is a converted 1890s home. Charming in a way that doesn't try too hard. Arrive 15 minutes before opening on weekends if you want a table.</p>
+        <div class="must-order">🏆 Order: Quiche of the day · House pastries · The soup</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Nebraska State Capitol is a 10-min walk — combine for a morning → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · 330 S 10th St · Morning + lunch hours</span>
+          <a class="card-link" href="https://www.google.com/maps/search/The+Green+Gateau+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Bread+and+Cup+Lincoln+Nebraska+Haymarket">
+        <div class="card-top">
+          <div class="card-name">Bread & Cup</div>
+          <div class="card-right"><span class="card-emoji">🍳</span><span class="rating top">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Brunch · Haymarket · Seasonal Menu</span>
+        <p class="card-desc">Right in the heart of the Haymarket — exposed brick, rotating seasonal menu, and a brunch that's become the social event of weekend mornings for a significant chunk of Lincoln's population 🥂. The eggs Benedict variations are consistently excellent. The house-made bread (they're a bakery first) shows up everywhere on the menu and earns its billing. Order a pastry even if you're full. You'll regret it if you don't.</p>
+        <div class="must-order">🏆 Order: Eggs Benedict · Seasonal pastry · Whatever's on the specials board</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Haymarket Farmer's Market is steps away on Saturday mornings → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Haymarket district · Weekend brunch · Seasonal menu</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Bread+and+Cup+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Indigo+Bridge+Books+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Indigo Bridge Books & Café</div>
+          <div class="card-right"><span class="card-emoji">📚</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Coffee · Used Books · Near Haymarket · Quiet Morning</span>
+        <p class="card-desc">Bookstore café that does both halves correctly — rare. A curated selection of used and new books, excellent espresso drinks, and the kind of slow-morning atmosphere that's increasingly hard to find 📖. Popular with UNL grad students and people who want to read their newspaper without music at 90 decibels. Good pastry rotation. Low-key, zero pretension.</p>
+        <div class="must-order">🏆 Order: Latte · Browse the shelves for 20 min · Slow morning energy</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Near Haymarket · Morning hours · Bring a book</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Indigo+Bridge+Books+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Runza+Restaurant+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Runza</div>
+          <div class="card-right"><span class="card-emoji">🥟</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Nebraska Original · Multiple Locations · The State Food</span>
+        <p class="card-desc">If you don't eat a Runza while in Nebraska, you haven't been to Nebraska. This is the state's homegrown fast-food chain — a warm, doughy bread pocket stuffed with seasoned beef, cabbage, and onions 🥟. Born in Lincoln in 1949. The chain sandwich is fine but the Runza itself is the thing. It's comfort food that makes zero sense on paper and complete sense in your hands at 11am. Order the original. Get onion rings.</p>
+        <div class="must-order">🏆 Order: Original Runza · Onion rings · It's $7 — just do it</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · Multiple Lincoln locations · Drive-through available · Nebraska staple</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Runza+Restaurant+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LUNCH & CASUAL -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🥗</span>
+      <h3 class="csection-label">Lunch & Casual</h3>
+      <span class="csection-tag" style="background:var(--ink)">Midday Moves</span>
+    </div>
+    <p class="csection-sub">Lincoln's lunch scene is dominated by the Haymarket and O Street. These are the spots worth a real stop — not just fuel.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Honest+Abes+Burgers+Freedom+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Honest Abe's Burgers & Freedom</div>
+          <div class="card-right"><span class="card-emoji">🍔</span><span class="rating top">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Smash Burgers · O Street · Lincoln Best Burger</span>
+        <p class="card-desc">The best burger in Lincoln, and it's not close. Thin smash patties, maximally caramelized crust, stacked with serious toppings on a brioche bun 🍔. The kitchen is tiny, the menu is focused, and the execution is consistent. There's a reason the line moves out the door on weekends. Their fries are also legitimately excellent — not an afterthought. Get there by 11:30 if you want to eat before the lunch crowd descends.</p>
+        <div class="must-order">🏆 Order: Double smash burger · Fries · A shake if you're committed</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Zoo Bar is a short walk for a post-lunch beer → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · O Street area · Lunch + dinner · Small shop</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Honest+Abes+Burgers+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Bison+Witches+Bar+Deli+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Bison Witches Bar & Deli</div>
+          <div class="card-right"><span class="card-emoji">🥪</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Deli · Haymarket · Giant Sandwiches · Cold Beer</span>
+        <p class="card-desc">Half deli, half bar — and both halves are excellent. Massive sandwiches on house-baked bread, a rotating tap list that leans Nebraska craft, and a cozy Haymarket space that fills up fast at lunch 🥙. The Reuben is the move, full stop. Cold beer and a big sandwich is a simple formula but Bison Witches executes it better than anyone else in the city. Crowded on game days — plan accordingly.</p>
+        <div class="must-order">🏆 Order: The Reuben · Whatever Nebraska craft is on tap · Get there before noon</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: D.C. Haymakers is around the corner for a post-lunch drink → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Haymarket · Lunch + dinner · Bar + deli</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Bison+Witches+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Lazlos+Brewery+Grill+Lincoln+Nebraska+Haymarket">
+        <div class="card-top">
+          <div class="card-name">Lazlo's Brewery & Grill</div>
+          <div class="card-right"><span class="card-emoji">🍺</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Brewpub · Haymarket · All-Day · Reliable</span>
+        <p class="card-desc">Lincoln's original brewpub and still one of the most reliable all-day spots in the city. The house-brewed beers are genuinely good — especially the IPA and lager. The menu is broader than most brewpubs: burgers, ribs, pasta, and a prime rib that's earned its reputation 🥩. Go for the beer-and-food combo. Central Haymarket location makes it an easy anchor for any afternoon.</p>
+        <div class="must-order">🏆 Order: House IPA · Smoked prime rib sandwich · Onion rings</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Haymarket · All day · House-brewed beer</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Lazlos+Brewery+Grill+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INTERNATIONAL -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🌍</span>
+      <h3 class="csection-label">International & Specialty</h3>
+      <span class="csection-tag" style="background:var(--teal)">Beyond Burgers</span>
+    </div>
+    <p class="csection-sub">Lincoln is more diverse than its reputation suggests. There's legitimately excellent Indian, Thai, Vietnamese, and Ethiopian food here — seek it out.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/The+Oven+Indian+Restaurant+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">The Oven</div>
+          <div class="card-right"><span class="card-emoji">🍛</span><span class="rating top">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Indian · 201 N 8th St · Haymarket · Best Indian in Nebraska</span>
+        <p class="card-desc">The best Indian restaurant in Nebraska, and legitimately one of the best in the Midwest — not a small claim. Run with serious commitment to authentic regional Indian cuisine: the tandoori preparations are exceptional, the curries have real depth, and the lunch buffet is one of the great weekday deals in the city 🍛. The naan from the tandoor oven is exactly what it should be. Dinner is busier; the lunch buffet gives you more variety for less money. Don't miss the mango lassi.</p>
+        <div class="must-order">🏆 Order: Chicken tikka masala · Lamb rogan josh · Garlic naan · Mango lassi</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Haymarket district is steps away — explore before or after → Culture</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · 201 N 8th St · Lunch buffet + dinner · Best in Nebraska</span>
+          <a class="card-link" href="https://www.google.com/maps/search/The+Oven+Indian+Restaurant+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Vincenzos+Ristorante+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Vincenzo's Ristorante</div>
+          <div class="card-right"><span class="card-emoji">🍝</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Italian · Downtown O Street · Classic · Dinner</span>
+        <p class="card-desc">Lincoln's classic Italian restaurant — in business long enough to have become part of the city's identity. Handmade pastas, veal dishes, excellent tiramisu, and a wine list that takes itself appropriately seriously 🍷. The dining room has that warm, slightly formal old-school Italian vibe. Not trendy, intentionally. The kind of restaurant your parents consider "going out" and they're right to. Reservations on weekends.</p>
+        <div class="must-order">🏆 Order: House-made pasta · Veal piccata · Tiramisu · Glass of Barolo</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · O Street · Dinner · Reserve weekends</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Vincenzos+Ristorante+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Lan+Vietnamese+Restaurant+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Lan Vietnamese Restaurant</div>
+          <div class="card-right"><span class="card-emoji">🍜</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Vietnamese · South Lincoln · Local Favorite · Pho</span>
+        <p class="card-desc">The Vietnamese food anchor of Lincoln's South Street corridor. The pho broth is the real thing — slow-cooked, complex, genuinely restorative 🍜. Strong banh mi and a solid Vietnamese coffee that'll reroute your day. The spring rolls are made-to-order and show it. Beloved by locals who've been regulars for years and protective of anyone who doesn't know about it yet. Order the large pho and commit.</p>
+        <div class="must-order">🏆 Order: Large beef pho · Banh mi · Vietnamese iced coffee</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · South Lincoln · Lunch + dinner · Cash-friendly · Local staple</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Vietnamese+Restaurant+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DINNER & SPLURGE -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🕯️</span>
+      <h3 class="csection-label">Dinner & Splurge</h3>
+      <span class="csection-tag" style="background:var(--rust)">Worth It</span>
+    </div>
+    <p class="csection-sub">For when you want to actually sit down, take your time, and eat something that makes you feel things. Lincoln has options beyond Applebee's, promise.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Venue+Restaurant+Lounge+Lincoln+Nebraska+Haymarket">
+        <div class="card-top">
+          <div class="card-name">Venue Restaurant & Lounge</div>
+          <div class="card-right"><span class="card-emoji">🔥</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Upscale American · Haymarket · Special Occasion</span>
+        <p class="card-desc">Lincoln's go-to for a proper dinner out. The filet is consistently great, the cocktail program is serious, and the Haymarket brick-and-beam interior makes the whole thing feel like somewhere worth being 🥩. Service is attentive without being overbearing. Good for date night, celebrations, or any dinner where you want to feel like an adult. The beef tenderloin and the pork belly starter are the moves. Reserve ahead.</p>
+        <div class="must-order">🏆 Order: Filet mignon · Pork belly starter · House cocktail</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Boiler Room or HiPo for a pre-dinner cocktail → Bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Haymarket · Dinner · Reserve recommended</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Venue+Restaurant+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Plank+Seafood+Provisions+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Plank Seafood Provisions</div>
+          <div class="card-right"><span class="card-emoji">🦞</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Seafood · Haymarket · Daily Catch · Chef-Driven</span>
+        <p class="card-desc">Fresh seafood in landlocked Nebraska sounds like a trap — Plank is the exception that disproves the rule. Daily fish flown in, serious kitchen execution, and a menu that changes based on what's actually good that week 🐟. The oyster selection is impressive for a city this far from any coast. The whole fish preparation is always the best thing on the menu. Come hungry and order multiple things. This is worth the spend.</p>
+        <div class="must-order">🏆 Order: Oysters on the half shell · Whole fish of the day · The chowder</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Haymarket area · Dinner · Daily menu · Reserve ahead</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Plank+Seafood+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Misty+Restaurant+Lounge+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Misty's Restaurant & Lounge</div>
+          <div class="card-right"><span class="card-emoji">🥩</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Prime Rib · 70th & Van Dorn · Lincoln Institution · Since 1966</span>
+        <p class="card-desc">Been slinging prime rib since 1966 and shows absolutely zero signs of slowing down. This is the place Lincoln goes for a celebratory dinner — Husker wins, anniversaries, graduations 🎉. The prime rib is carved tableside and sized in a way that requires a moment of reckoning. The salad bar is a full experience in itself (in the best possible '70s supper-club way). Order the queen cut if you're not sure. Order the king cut if you're sure.</p>
+        <div class="must-order">🏆 Order: Prime rib · Hit the salad bar · Old fashioned from the bar</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · 6235 Havelock Ave · Dinner · Est. 1966 · Nebraska classic</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Mistys+Restaurant+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Leadbelly+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Leadbelly</div>
+          <div class="card-right"><span class="card-emoji">🍹</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Cocktail Bar + Kitchen · Lively · Downtown · Creative Menu</span>
+        <p class="card-desc">One of Lincoln's best cocktail bars that's also producing serious food — that combination is rarer than it should be. The bar team is legitimately talented: seasonal, ingredient-driven cocktails that justify the price 🍸. The food menu rotates but has ranged from excellent charcuterie to some of the most creative small plates in the city. Get a few rounds of both. The vibe is lively without being a scene. Weekends can get crowded.</p>
+        <div class="must-order">🏆 Order: House seasonal cocktail · Charcuterie board · Small plates to share</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Downtown · Dinner + late night · Cocktail-forward</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Leadbelly+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Single+Barrel+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Single Barrel</div>
+          <div class="card-right"><span class="card-emoji">🥃</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Whiskey Bar + Kitchen · Haymarket · Craft Cocktails</span>
+        <p class="card-desc">Whiskey-focused bar and kitchen in the Haymarket that takes the spirits side of things seriously without being insufferable about it 🥃. The food menu was designed to pair with whiskey — smoked meats, elevated bar snacks, and a burger worth writing home about. Extensive bourbon and Scotch selection. Great for a pre-dinner drink that turns into dinner.</p>
+        <div class="must-order">🏆 Order: A neat pour of something interesting · Smoked brisket · The burger</div>
+        <div class="card-footer">
+          <span class="card-meta">$$$ · Haymarket · Dinner + bar · Whiskey selection</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Single+Barrel+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Boitano+Pizza+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Boitano's</div>
+          <div class="card-right"><span class="card-emoji">🍕</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Pizza · Late Night · Downtown · Thin Crust</span>
+        <p class="card-desc">Lincoln's best late-night pizza. The thin crust is properly done — crispy edge, good char, not a cracker but not a chew toy either 🍕. Classic combinations done right rather than trying too hard to be innovative. It's the kind of pizza you want at 10pm when the question is "pizza or going home?" The calzones are underrated. Walk-in friendly most of the time.</p>
+        <div class="must-order">🏆 Order: Thin crust pepperoni · Calzone · Works after a night at the bars</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Downtown · Late night · Pizza + calzones</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Boitano+Pizza+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="notice">🌽 <strong>Lincoln tip:</strong> The Haymarket has the highest restaurant density — but some of the city's best spots (Misty's, Vincenzo's, Lan Vietnamese) are scattered around. Worth a short drive for the right meal.</div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-restaurants">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🍽 Restaurants · Lincoln, NE Field Guide by Zach</span>
+    <span>No chain defaults · All local · Always verify hours</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+<!-- BARS -->
+<div class="page" id="page-bars">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-bar)">🍺 Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Bars</h2>
+      <p class="page-sub">Lincoln's bar scene is anchored by the Haymarket and the O Street corridor. From a 100-year-old dive to a world-class blues venue to serious craft cocktail programs — it's all here.</p>
+    </div>
+    <div class="page-header-right">By Zach<br>No affiliation<br>Google ratings sourced</div>
+  </div>
+
+  <!-- ICONIC & HISTORIC -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🎸</span>
+      <h3 class="csection-label">Iconic & Historic</h3>
+      <span class="csection-tag" style="background:var(--c-bar)">Lincoln Legends</span>
+    </div>
+    <p class="csection-sub">Some bars are just places to drink. These are places that are part of the city's actual identity.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Zoo+Bar+Lincoln+Nebraska+blues">
+        <div class="card-top">
+          <div class="card-name">The Zoo Bar</div>
+          <div class="card-right"><span class="card-emoji">🎸</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Blues Bar · 1422 O St · Since 1973 · National Landmark</span>
+        <p class="card-desc">One of America's great blues bars, full stop. In continuous operation since 1973, the Zoo Bar has hosted some of the most important names in American blues — many before anyone else knew them 🎷. It's a narrow, dark, loud, beautiful room with a stage small enough that you're 10 feet from whatever's happening. Live music almost every night. Cold Pabst. Sticky floor. No irony. If you only do one bar in Lincoln, it's this one. Check the schedule ahead of time — the weekly lineups are posted online.</p>
+        <div class="must-order">🏆 Do: Show up for a live show · Order Pabst · Stand close to the stage</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Honest Abe's Burgers is a short walk for pre-show fuel → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · 1422 O St · Live music most nights · No age limit early / 21+ after 9pm</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Zoo+Bar+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Duffys+Tavern+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Duffy's Tavern</div>
+          <div class="card-right"><span class="card-emoji">🍻</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Dive Bar · 1412 O St · Lincoln's Oldest · No Frills</span>
+        <p class="card-desc">Lincoln's oldest and most beloved dive bar. The kind of place where nobody cares what you're wearing, the beer is cheap, the jukebox is actually good, and the regulars have been sitting on the same stools for 30 years 🍺. Dark, comfortable, and completely unpretentious. Duffy's has outlasted every trend in Lincoln's bar scene because it never tried to follow one. Pool table, strong pours. Go on a Tuesday when it's actually a neighborhood bar and not just a landmark.</p>
+        <div class="must-order">🏆 Do: Cheap beer · Jukebox · Pool · Sit at the bar and talk to someone</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('bars')">📍 Nearby: Zoo Bar is right next door — do both in one night</div>
+        <div class="card-footer">
+          <span class="card-meta">$ · 1412 O St · Open daily · Cash preferred · Oldest dive in Lincoln</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Duffys+Tavern+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Knickerbockers+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Knickerbockers</div>
+          <div class="card-right"><span class="card-emoji">🎵</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Live Music Venue · Punk · Indie · Alternative · All Ages</span>
+        <p class="card-desc">Lincoln's indie/punk/alternative live music mainstay. Small, slightly chaotic, and exactly as it should be — the shows here have energy that bigger venues can't manufacture 🎤. A mix of local bands and touring acts that are one album away from playing much larger rooms. All-ages for shows, 21+ at the bar. Check the calendar; it books up.</p>
+        <div class="card-footer">
+          <span class="card-meta">$ · 901 O St · Live music venue · Check schedule · All-ages shows</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Knickerbockers+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HAYMARKET BARS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏙️</span>
+      <h3 class="csection-label">Haymarket Strip</h3>
+      <span class="csection-tag" style="background:var(--rust)">Historic District</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/DC+Haymakers+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">D.C. Haymakers</div>
+          <div class="card-right"><span class="card-emoji">🌾</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Bar + Kitchen · Haymarket · Outdoor Patio · All Day</span>
+        <p class="card-desc">Haymarket anchor bar with a great patio and a food menu that goes beyond standard bar fare. Cold craft beer, solid cocktails, and a vibe that works for a midday patio session or a late-evening hang 🌳. One of the few Haymarket spots where the outdoor seating is genuinely pleasant rather than just an afterthought. Get here in the afternoon on a nice day and you won't leave until evening.</p>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: The Oven and Bread & Cup are steps away → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Haymarket · All day · Patio · Bar + kitchen</span>
+          <a class="card-link" href="https://www.google.com/maps/search/DC+Haymakers+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/HiPo+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">HiPo</div>
+          <div class="card-right"><span class="card-emoji">🍸</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Craft Cocktails · Intimate · Haymarket · Bar-Forward</span>
+        <p class="card-desc">Lincoln's most serious craft cocktail bar. Small, intimate, dimly lit — and the people behind the bar know what they're doing 🍸. The cocktail menu rotates seasonally and shows genuine creativity without being precious about it. This is where you go when you want to drink something properly made rather than something with a blinking light in it. Sit at the bar. Ask what they're excited about. Let them make something for you.</p>
+        <div class="must-order">🏆 Do: Sit at the bar · Ask for a recommendation · Order something you've never had</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Haymarket area · Evening hours · Cocktail-focused · Intimate</span>
+          <a class="card-link" href="https://www.google.com/maps/search/HiPo+cocktail+bar+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Barry+Bar+Grill+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Barry's Bar & Grill</div>
+          <div class="card-right"><span class="card-emoji">🏆</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Sports Bar · O Street · Multiple TVs · Classic</span>
+        <p class="card-desc">The O Street sports bar that actually delivers. Multiple screens, every game, decent food (the burger is better than it needs to be), and a crowd that's actually into whatever's on rather than treating sports as background noise 📺. Game day at Barry's has a proper energy. The loaded fries are the move. Get there early for any big Husker game — it fills fast and then some.</p>
+        <div class="must-order">🏆 Order: Loaded fries · Cold beer · Sit facing the biggest screen</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · O Street · Sports bar · All games · Game day institution</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Barrys+Bar+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CRAFT BEER -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🍻</span>
+      <h3 class="csection-label">Nebraska Craft Beer</h3>
+      <span class="csection-tag" style="background:var(--jungle)">Local Brew</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Nebraska+Brewing+Company+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Nebraska Brewing Company</div>
+          <div class="card-right"><span class="card-emoji">🌽</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Craft Brewery · Taproom + Patio · Nebraska-Brewed</span>
+        <p class="card-desc">Nebraska's most decorated craft brewery. Multiple GABF medals, a rotating tap list that always has something interesting, and a taproom that's actually pleasant rather than just functional 🏅. The Cardinal Pale Ale and EPA (Extra Pale Ale) are the approachable entry points, but the seasonal and specialty releases are where the real action is. The patio is excellent on a warm day. Food is available and works well alongside the beer.</p>
+        <div class="must-order">🏆 Order: Ask what's on cask or just-tapped · Cardinal Pale · Seasonal release</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('nature')">📍 Nearby: Wilderness Park is a short drive — combine for a day → Nature</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Multiple locations · Taproom + patio · GABF medalist</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Nebraska+Brewing+Company+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Zipline+Brewing+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Zipline Brewing Co.</div>
+          <div class="card-right"><span class="card-emoji">⚡</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Craft Brewery · Taproom · Rotating Taps · Dog Friendly</span>
+        <p class="card-desc">Lincoln's other excellent craft brewery — the Cooper Lager is the flagship and earns the praise it gets. Dog-friendly taproom, rotating seasonal releases, and a team that takes the craft seriously while keeping the atmosphere approachable ⚡. The Copper Alt and IPA releases are consistent highlights. A tasting flight is the best way in on your first visit. Food trucks rotate through on weekends.</p>
+        <div class="must-order">🏆 Order: Cooper Lager · Tasting flight · Check for food truck schedule</div>
+        <div class="card-footer">
+          <span class="card-meta">$$ · Lincoln · Dog friendly · Food trucks on weekends</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Zipline+Brewing+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LATE NIGHT -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🌙</span>
+      <h3 class="csection-label">Late Night & The Railyard</h3>
+      <span class="csection-tag" style="background:var(--ink)">After Hours</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Railyard+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">The Railyard</div>
+          <div class="card-right"><span class="card-emoji">🏙️</span><span class="rating">⭐ 4.4</span></div>
+        </div>
+        <span class="vibe-tag">Entertainment District · Multiple Venues · Outdoor · O Street Corridor</span>
+        <p class="card-desc">Lincoln's outdoor entertainment hub — a converted rail yard (appropriately) with multiple bars, restaurants, and a live music stage. The energy here picks up on weekends when there's live outdoor programming 🎸. It's a hub rather than a single bar — wander between venues, grab food, catch whatever's playing. On a warm evening with a show going, it's one of the liveliest spots in the city. Check the event calendar before going.</p>
+        <div class="card-footer">
+          <span class="card-meta">Various prices · O Street/Canopy St area · Check event schedule · Live music</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Railyard+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="notice">🎸 <strong>Lincoln night-out route:</strong> Start at HiPo or Leadbelly for cocktails → Zoo Bar or Knickerbockers for live music → Duffy's for a nightcap. That's a complete Lincoln evening.</div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-bars">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🍺 Bars · Lincoln, NE Field Guide by Zach</span>
+    <span>Ratings via Google Maps · No affiliation</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+<!-- NATURE -->
+<div class="page" id="page-nature">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-nature)">🌿 Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Nature & Parks</h2>
+      <p class="page-sub">Lincoln is a surprisingly green city — it has more park acreage per capita than most comparably-sized American cities. The surrounding prairie and lakes make for easy day trips that feel like you're far from anywhere.</p>
+    </div>
+    <div class="page-header-right">Urban parks<br>Day trip lakes<br>Native prairie</div>
+  </div>
+
+  <!-- URBAN PARKS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🌳</span>
+      <h3 class="csection-label">Urban Parks</h3>
+      <span class="csection-tag" style="background:var(--jungle)">In the City</span>
+    </div>
+    <p class="csection-sub">Lincoln's park system is legitimately impressive. Wilderness Park alone — 1,400+ acres of trails inside city limits — is one of the great urban natural areas in America.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Wilderness+Park+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Wilderness Park</div>
+          <div class="card-right"><span class="card-emoji">🌲</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Trail System · 1,400+ Acres · Largest Urban Park in US · Free</span>
+        <p class="card-desc">The largest municipal urban park in the United States — 1,400+ contiguous acres of mixed hardwood forest, prairie, and creek bottom entirely within Lincoln's city limits 🌲. Multiple entry points, 20+ miles of multi-use trails, mountain bike loops, and enough tree cover that you can be 30 minutes in and feel completely removed from the city. The Salt Creek corridor trail system runs through it. No admission, open daily. Bring water — the trails are further than they look. Best in spring/fall when the canopy is dramatic.</p>
+        <div class="must-order">🏆 Do: South entry trail toward the creek · Sunrise or golden hour run · Mountain bike the north loops</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · Multiple entries · 20+ miles of trails · All skill levels</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Wilderness+Park+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Pioneers+Park+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Pioneers Park & Nature Center</div>
+          <div class="card-right"><span class="card-emoji">🦬</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Bison · Elk · Prairie · Nature Center · West Lincoln</span>
+        <p class="card-desc">A 668-acre park on the western edge of Lincoln with a nature center, native prairie restoration, and the most surprising feature: actual American bison and elk roaming behind natural fencing 🦬. This is not a zoo. It's a preservation landscape. The bison pasture is visible from the walking trails. The nature center has well-curated exhibits on Great Plains ecology and Indigenous history. Peaceful, underused, genuinely beautiful on a clear morning with low-angle prairie light.</p>
+        <div class="must-order">🏆 Do: Walk the bison prairie trail · Nature center exhibits · Sunrise on the prairie</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('culture')">📍 Nearby: Sunken Gardens is a short drive → Nature + Culture combo day</div>
+        <div class="card-footer">
+          <span class="card-meta">Free entry · Nature center has hours · West Lincoln · All ages</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Pioneers+Park+Nature+Center+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Sunken+Gardens+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Sunken Gardens</div>
+          <div class="card-right"><span class="card-emoji">🌸</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Public Garden · 27th & Capitol Pkwy · Free · Peak: June–Sept</span>
+        <p class="card-desc">One of the most beautiful public gardens in the Midwest — and almost no one outside of Lincoln knows it exists. The sunken design creates a natural amphitheater of color: 30,000+ annuals and perennials planted in rotating seasonal displays, koi pond, fountains 🌺. Best from late June through September. Free, open daily, walkable from downtown. Legitimately worth going out of your way for if you have any appreciation for gardens. Photography gold at any hour.</p>
+        <div class="must-order">🏆 Do: Evening walk when the lighting is warm · Summer peak color · Bring a camera</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 27th & Capitol Pkwy · Open daily · Peak season June–Sept</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Sunken+Gardens+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Holmes+Lake+Park+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Holmes Lake Park</div>
+          <div class="card-right"><span class="card-emoji">🎣</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Lake · Southeast Lincoln · Fishing · Walking Path · Disc Golf</span>
+        <p class="card-desc">Lincoln's most popular urban lake park — a 90-acre lake surrounded by a well-maintained trail loop, fishing access, disc golf course, and open meadow space 🎣. Largemouth bass, bluegill, and catfish fishing. Kayak and canoe launch available. The perimeter trail (about 2.5 miles) is one of the city's best walks — the lake view is genuinely pleasant in any season. Disc golf course is one of the better free urban courses in the state.</p>
+        <div class="must-order">🏆 Do: Perimeter trail walk · Throw a disc golf round · Fish at dawn</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · Southeast Lincoln · Fishing license required · Kayak launch</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Holmes+Lake+Park+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DAY TRIPS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🚗</span>
+      <h3 class="csection-label">Day Trips</h3>
+      <span class="csection-tag" style="background:var(--teal)">Under 1 Hour</span>
+    </div>
+    <p class="csection-sub">Some of Nebraska's best outdoor experiences are within an hour of Lincoln. Worth the drive.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Branched+Oak+Lake+Nebraska+State+Recreation">
+        <div class="card-top">
+          <div class="card-name">Branched Oak Lake</div>
+          <div class="card-right"><span class="card-emoji">⛵</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Lake · ~30 min NW · Swimming · Sailing · Camping · Beach</span>
+        <p class="card-desc">The best lake day from Lincoln. 1,800+ acres of Nebraska reservoir with a sandy beach, designated swimming area, boat launch, sailing club, camping, and fishing all in one spot ⛵. Crystal-clear water compared to most Nebraska lakes. The beach gets proper summer energy. Sailboats are out most weekends from April to October. Camping is excellent — reserve early for summer weekends. This is the lake Lincoln goes to when it wants to feel like it's somewhere with water.</p>
+        <div class="must-order">🏆 Do: Beach day with picnic · Rent a kayak or bring a boat · Sunset from the beach</div>
+        <div class="card-footer">
+          <span class="card-meta">Park pass required · ~30 min NW of Lincoln · Beach + boat + camping</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Branched+Oak+Lake+Raymond+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Indian+Cave+State+Park+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Indian Cave State Park</div>
+          <div class="card-right"><span class="card-emoji">🏞️</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">State Park · ~1.5 hrs SE · Bluffs · Missouri River · Hiking</span>
+        <p class="card-desc">The most scenic hiking in eastern Nebraska, by a wide margin. Limestone bluffs and ravines carved by the Missouri River, 20+ miles of wooded trails, a replica 1800s pioneer town, and the actual sandstone cave with Native American petroglyphs that gives the park its name 🏞️. The overlook views of the Missouri River bottom are dramatic — you forget you're in Nebraska for a minute. Worth the 1.5-hour drive. Go on a weekday if possible — it's popular and the parking lots fill on summer weekends.</p>
+        <div class="must-order">🏆 Do: Bluff Trail overlooks · The cave itself · Camp if you can stay overnight</div>
+        <div class="card-footer">
+          <span class="card-meta">Park pass · ~1.5 hrs SE · Camping available · Best hiking in eastern NE</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Indian+Cave+State+Park+Shubert+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Spring+Creek+Prairie+Audubon+Center+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Spring Creek Prairie Audubon Center</div>
+          <div class="card-right"><span class="card-emoji">🦅</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Native Prairie · ~25 min SW · Birdwatching · Trails · Quiet</span>
+        <p class="card-desc">A rare intact piece of native tallgrass prairie — the ecosystem that once covered most of the Great Plains and now exists on less than 1% of its original range. The Audubon Center manages 800+ acres of restored and preserved prairie 🦅. Walking trails wind through grasses that grow 6 feet tall in summer. Exceptional birdwatching (short-eared owls, bobolinks, dickcissels). The kind of place that recalibrates what you think Nebraska actually looks like. Quiet, meditative, beautiful.</p>
+        <div class="must-order">🏆 Do: Dawn bird walk · Prairie bloom season (July) · Bring binoculars</div>
+        <div class="card-footer">
+          <span class="card-meta">Small entry fee · ~25 min SW of Lincoln · Native tallgrass prairie · Birdwatching</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Spring+Creek+Prairie+Audubon+Center+Denton+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-nature">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🌿 Nature & Parks · Lincoln, NE Field Guide by Zach</span>
+    <span>Nebraska outdoors · Underrated and real</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+<!-- CULTURE -->
+<div class="page" id="page-culture">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-culture)">🎨 Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Culture & Events</h2>
+      <p class="page-sub">Lincoln is the capital city and home to the University of Nebraska — which means architecture, museums, performing arts, and live events at a scale that routinely surprises people who expected less.</p>
+    </div>
+    <div class="page-header-right">State Capital<br>University City<br>Genuinely good museums</div>
+  </div>
+
+  <!-- ARCHITECTURE & MUSEUMS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏛️</span>
+      <h3 class="csection-label">Architecture & Museums</h3>
+      <span class="csection-tag" style="background:var(--c-culture)">Worth Your Time</span>
+    </div>
+    <p class="csection-sub">Lincoln's cultural institutions are routinely underestimated. The State Capitol alone justifies the visit.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Nebraska+State+Capitol+Lincoln">
+        <div class="card-top">
+          <div class="card-name">Nebraska State Capitol</div>
+          <div class="card-right"><span class="card-emoji">🏛️</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Architecture · 1932 Art Deco · Free Tours · Tallest in the US</span>
+        <p class="card-desc">One of the great buildings in America — full stop. The Nebraska State Capitol (completed 1932) is an extraordinary Art Deco tower on the Great Plains, designed by Bertram Goodhue to be something genuinely original rather than a Washington D.C. copy 🏛️. 400-foot tower, Sower statue on top, mosaics by Hildreth Meière, and interior work that is legitimately world-class. Free tours run regularly and are worth taking — the rotunda and legislative chambers alone are worth the trip. Look up constantly inside. Don't rush this.</p>
+        <div class="must-order">🏆 Do: Take the guided tour · Look up in the rotunda · The observation deck on a clear day</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: The Green Gateau is a 10-min walk for breakfast before the tour → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 1445 K St · Daily tours · Observation deck · Art Deco masterpiece</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Nebraska+State+Capitol+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Sheldon+Museum+Art+Lincoln+Nebraska+University">
+        <div class="card-top">
+          <div class="card-name">Sheldon Museum of Art</div>
+          <div class="card-right"><span class="card-emoji">🎨</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Art Museum · UNL Campus · Free · Philip Johnson Building</span>
+        <p class="card-desc">One of the most significant university art museums in America — the Philip Johnson building alone (1963) is a work of architecture worth the visit, and the collection inside is serious 🎨. Permanent holdings include major American artists and rotating exhibitions that would be strong in any major city. Free admission. Right on the UNL campus with excellent sculpture garden. Open Tuesday–Sunday. The kind of museum that gets better the slower you move through it. Don't skip the sculpture garden.</p>
+        <div class="must-order">🏆 Do: Walk the sculpture garden · Rotating exhibition · Architecture as much as art inside</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · UNL Campus · Tue–Sun · Philip Johnson building · World-class collection</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Sheldon+Museum+Art+UNL+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/International+Quilt+Museum+Lincoln+Nebraska+University">
+        <div class="card-top">
+          <div class="card-name">International Quilt Museum</div>
+          <div class="card-right"><span class="card-emoji">🪡</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">World's Largest Quilt Collection · UNL Campus · Unexpected Masterpiece</span>
+        <p class="card-desc">The world's largest public quilt collection — and yes, it's serious. If you walked in expecting folk art and left understanding you just saw one of the great textile collections in the world, that's the normal reaction 🪡. 5,000+ quilts representing centuries of the art form across cultures, with dedicated permanent galleries and rotating exhibitions. The building itself is architecturally striking. Consistently surprises people who weren't expecting to care.</p>
+        <div class="must-order">🏆 Do: Historic quilts gallery · Whatever's on rotating exhibit · Budget 2 hours</div>
+        <div class="card-footer">
+          <span class="card-meta">Small entry fee · UNL campus · World's largest collection · Tue–Sun</span>
+          <a class="card-link" href="https://www.google.com/maps/search/International+Quilt+Museum+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Nebraska+History+Museum+Lincoln">
+        <div class="card-top">
+          <div class="card-name">Nebraska History Museum</div>
+          <div class="card-right"><span class="card-emoji">📜</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">State History · Downtown · Free · Native American Collections</span>
+        <p class="card-desc">The official repository of Nebraska's story — and it's more interesting than it sounds. Strong Native American collections (Great Plains nations, particularly), pioneer and settlement history, and the kind of deep regional archival material that makes actual historians excited 📜. Free admission. The building is a historic landmark itself. Worth 90 minutes if you have any interest in what this place was before it was a state. Don't skip the Indigenous history galleries.</p>
+        <div class="must-order">🏆 Do: Indigenous history galleries · Pioneer collection · Free and genuinely informative</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · Downtown Lincoln · Tue–Sat · State history + Native American collections</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Nebraska+History+Museum+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EVENTS & DISTRICTS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏘️</span>
+      <h3 class="csection-label">Districts & Events</h3>
+      <span class="csection-tag">Weekly + Seasonal</span>
+    </div>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Haymarket+Farmers+Market+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Lincoln Haymarket Farmer's Market</div>
+          <div class="card-right"><span class="card-emoji">🥬</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Market · Haymarket · Every Saturday · May–October · 8am–noon</span>
+        <p class="card-desc">One of the best farmer's markets in the Midwest — not hyperbole. Every Saturday from May through October, the Haymarket blocks fill with 250+ vendors: Nebraska farm produce, artisan food products, live music, local food trucks, and an energy that makes it hard to leave before noon 🥦. The best time to be in the Haymarket. Go hungry, bring a bag, talk to the vendors. This is what the city does well on a Saturday morning.</p>
+        <div class="must-order">🏆 Do: Arrive early for the best produce · Grab breakfast from a food vendor · Get honey from a local beekeeper</div>
+        <div class="nearby" onclick="event.preventDefault();event.stopPropagation();go('restaurants')">📍 Nearby: Bread & Cup is steps away for brunch after → Restaurants</div>
+        <div class="card-footer">
+          <span class="card-meta">Free entry · Haymarket · Every Saturday 8am–noon · May–October</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Haymarket+Farmers+Market+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Haymarket+District+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Haymarket Historic District</div>
+          <div class="card-right"><span class="card-emoji">🧱</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Historic District · Brick Warehouses · Shops + Restaurants + Bars</span>
+        <p class="card-desc">The engine of Lincoln's cultural and culinary scene — a 10-block historic district of late 1800s brick warehouses converted into restaurants, bars, galleries, boutiques, and public space 🧱. The scale is walkable and human. The architecture is genuinely beautiful. Most of the restaurants and bars worth going to in Lincoln are either in the Haymarket or nearby. This is where you spend your time. If you're unsure where to go, start here and see what happens.</p>
+        <div class="card-footer">
+          <span class="card-meta">Free to explore · O & 7th St area · Walk everything · Day and night</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Haymarket+Historic+District+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Lied+Center+Performing+Arts+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Lied Center for Performing Arts</div>
+          <div class="card-right"><span class="card-emoji">🎭</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Performing Arts · UNL Campus · World-Class Venue · Check Schedule</span>
+        <p class="card-desc">A world-class performing arts venue on the UNL campus that brings in artists and productions that a city of Lincoln's size has no business having access to — and yet here it is 🎭. Broadway tours, world-renowned orchestras, dance companies, comedy acts, and speaker series throughout the season. The acoustics are legitimately exceptional (it's one of the better rooms in the country). Check the season schedule before your visit — if there's something on while you're here, go.</p>
+        <div class="must-order">🏆 Do: Check the season schedule before visiting · Buy tickets ahead · Dress comfortably</div>
+        <div class="card-footer">
+          <span class="card-meta">Ticket prices vary · UNL Campus · Check liedcenter.org for schedule</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Lied+Center+Performing+Arts+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Memorial+Stadium+Lincoln+Nebraska+Huskers">
+        <div class="card-top">
+          <div class="card-name">Memorial Stadium — Husker Football</div>
+          <div class="card-right"><span class="card-emoji">🏈</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Big Ten Football · Game Day · UNL Campus · Sea of Red</span>
+        <p class="card-desc">On game days, Memorial Stadium becomes the third-largest city in Nebraska — 90,000+ people in a sea of red with an atmosphere that's legitimately one of the great environments in college football 🏈. Nebraska fans have sold out every home game since 1962 — the longest active sellout streak in college football history. If there's a home game while you're here, go. Even if you don't care about football. The tailgate culture, the stadium noise, and the spectacle of 90,000 people in one place is worth experiencing once. Tickets go fast.</p>
+        <div class="must-order">🏆 Do: Tailgate in the morning · Wear red · Experience the stadium atmosphere</div>
+        <div class="card-footer">
+          <span class="card-meta">Ticket required · UNL Campus · Home game sellout streak since 1962 · Wear red</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Memorial+Stadium+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/National+Museum+Roller+Skating+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">National Museum of Roller Skating</div>
+          <div class="card-right"><span class="card-emoji">🛼</span><span class="rating">⭐ 4.5</span></div>
+        </div>
+        <span class="vibe-tag">Unique · South Lincoln · World's Only · Free</span>
+        <p class="card-desc">The world's only museum dedicated entirely to roller skating — and yes, it takes itself completely seriously, and yes, it's actually interesting 🛼. Artifacts spanning 200 years of the sport: vintage skates, skating costumes, championship memorabilia, early skating rink equipment. More fascinating than it sounds. Free admission. Takes about 45 minutes. Worth it for the "wait, this is real and in Lincoln?" energy alone. Tell people you went.</p>
+        <div class="must-order">🏆 Do: Free admission · 45 min visit · Best conversation starter of the trip</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 4730 South St · Mon–Fri business hours · World's only roller skating museum</span>
+          <a class="card-link" href="https://www.google.com/maps/search/National+Museum+Roller+Skating+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="notice">🌽 <strong>UNL Campus tip:</strong> The Sheldon Museum of Art, International Quilt Museum, Lied Center, and Memorial Stadium are all on or adjacent to the University of Nebraska campus. A campus walk strings them all together in a half-day.</div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-culture">
+      <div class="loading-cards">Connect the sheet to see community-added spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🎨 Culture & Events · Lincoln, NE Field Guide by Zach</span>
+    <span>Underrated capital city · More than you think</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
+<!-- MAP -->
+<div class="page" id="page-map">
+  <div id="map-container">
+    <div id="map"></div>
+    <div class="map-legend">
+      <span class="map-legend-title">LNK Field Guide</span>
+      <div class="leg-item"><div class="leg-dot" style="background:#B83030"></div>Restaurants</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2C6882"></div>Bars</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3C6B36"></div>Nature</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#6E3FAA"></div>Culture</div>
+    </div>
+  </div>
+</div>
+
+<!-- MOST LIKED -->
+<div class="page" id="page-top">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--rust)">❤️ Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Most Liked</h2>
+      <p class="page-sub">Everything the group has hearted, ranked by total likes. Hit ❤️ on any spot — it'll move up the list. Backed by Google Sheets so everyone's votes count.</p>
+    </div>
+    <div class="page-header-right">All categories<br>Sorted by ❤️ votes<br>Yours stay saved</div>
+  </div>
+
+  <div style="padding: 1.75rem 3rem 0;">
+    <div class="liked-filters">
+      <button class="liked-filter-btn active" data-cat="all"        onclick="setTopFilter('all')">All</button>
+      <button class="liked-filter-btn"        data-cat="restaurant" onclick="setTopFilter('restaurant')">🍽 Restaurants</button>
+      <button class="liked-filter-btn"        data-cat="bar"        onclick="setTopFilter('bar')">🍺 Bars</button>
+      <button class="liked-filter-btn"        data-cat="nature"     onclick="setTopFilter('nature')">🌿 Nature</button>
+      <button class="liked-filter-btn"        data-cat="culture"    onclick="setTopFilter('culture')">🎨 Culture</button>
+    </div>
+  </div>
+
+  <div style="padding: 0.5rem 3rem 3rem;">
+    <div id="top-spots-list" style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div class="top-spot-empty">Loading spots…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ENTRY BUTTON -->
+<button class="add-entry-btn" onclick="openModal()">＋ Add a Spot</button>
+
+<!-- ADD ENTRY MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">Add a Spot 📍</div>
+    <div class="modal-sub">Found somewhere great in Lincoln? Search for it on Google Maps below — then paste the URL back to auto-grab the coordinates.</div>
+
+    <div class="modal-row">
+      <label class="modal-label">🔍 Step 1 — Search on Google Maps</label>
+      <div class="maps-search-row">
+        <input class="maps-search-input" id="m-search" placeholder="e.g. Zoo Bar Lincoln Nebraska" onkeydown="if(event.key==='Enter')searchMaps()" />
+        <button class="maps-search-btn" onclick="searchMaps()">Open Maps ↗</button>
+      </div>
+      <div class="maps-hint">
+        👆 Hits Google Maps in a new tab scoped to Lincoln, NE. Find your spot, copy the URL from the address bar, paste below.
+      </div>
+    </div>
+
+    <div class="modal-row">
+      <label class="modal-label">🔗 Step 2 — Paste the Maps URL <span class="autofill-badge" id="coords-badge">✓ Coords grabbed!</span></label>
+      <div class="maps-url-row">
+        <input class="maps-url-input" id="m-maps-url" placeholder="Paste Google Maps URL here…" oninput="parseMapsUrl(this.value)" />
+        <button class="maps-parse-btn" id="extract-btn" onclick="parseMapsUrl(document.getElementById('m-maps-url').value)">Extract ↙</button>
+      </div>
+      <div class="maps-hint" id="maps-hint">
+        👆 Copy the full URL from the address bar after clicking on a specific place. The URL has the lat/lng baked in.
+      </div>
+    </div>
+
+    <hr class="modal-divider" />
+
+    <div class="modal-row">
+      <label class="modal-label">Name * <span class="autofill-badge" id="name-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-name" placeholder="e.g. Zoo Bar" />
+    </div>
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Category * <span class="autofill-badge" id="cat-badge">✓ Auto-filled</span></label>
+        <select class="modal-select" id="m-cat">
+          <option value="restaurant">🍽️ Restaurant</option>
+          <option value="bar">🍺 Bar</option>
+          <option value="nature">🌿 Nature</option>
+          <option value="culture">🎨 Culture</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Emoji <span class="autofill-badge" id="emoji-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-emoji" placeholder="e.g. 🎸" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Vibe / Location Tag <span class="autofill-badge" id="vibe-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-vibe" placeholder="e.g. Haymarket · Downtown · Great Patio" />
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Description *</label>
+      <textarea class="modal-textarea" id="m-desc" placeholder="What's the deal with this place? Why should we go?"></textarea>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">💡 Pro Tip / Insider Detail</label>
+      <input class="modal-input" id="m-detail" placeholder="e.g. Arrive early on weekends. Park on 8th St." />
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">🏆 Must Order / Must Do</label>
+      <input class="modal-input" id="m-order" placeholder="e.g. The Reuben · Cold Pabst · Check the live schedule" />
+    </div>
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Price <span class="autofill-badge" id="price-badge">✓ Auto-filled</span></label>
+        <select class="modal-select" id="m-price">
+          <option value="$">$ — Cheap</option>
+          <option value="$$">$$ — Mid</option>
+          <option value="$$$">$$$ — Splurge</option>
+          <option value="$$$$">$$$$ — Occasion</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Rating (e.g. ⭐ 4.7) <span class="autofill-badge" id="rating-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-rating" placeholder="⭐ 4.7" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Hours / Notes <span class="autofill-badge" id="hours-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-hours" placeholder="e.g. Tue–Sun 11am–9pm · Closed Mondays" />
+    </div>
+    <div class="modal-grid">
+      <div class="modal-row">
+        <label class="modal-label">Latitude <span class="autofill-badge" id="lat-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-lat" placeholder="e.g. 40.8170" />
+      </div>
+      <div class="modal-row">
+        <label class="modal-label">Longitude <span class="autofill-badge" id="lng-badge">✓ Auto-filled</span></label>
+        <input class="modal-input" id="m-lng" placeholder="e.g. -96.7037" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Google Maps Link <span class="autofill-badge" id="url-badge">✓ Auto-filled</span></label>
+      <input class="modal-input" id="m-url" placeholder="https://maps.google.com/…" />
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Your Name</label>
+      <input class="modal-input" id="m-author" placeholder="e.g. Zach" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-submit" onclick="submitEntry()">Submit Spot →</button>
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+    <div class="modal-status" id="modal-status"></div>
+    <div class="modal-sheet-note">
+      Spots are reviewed before appearing · <a class="sheet-link" target="_blank">📊 View the sheet →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  LINCOLN, NE FIELD GUIDE — CLIENT JS
+//  Replace YOUR_APPS_SCRIPT_URL with your deployed Apps Script URL
+// ══════════════════════════════════════════════════════════════
+
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const SHEET_URL       = 'YOUR_GOOGLE_SHEET_URL_HERE';
+
+// ── SHEET LINKS ─────────────────────────────────
+function initSheetLinks() {
+  const valid = SHEET_URL && !SHEET_URL.includes('YOUR_GOOGLE_SHEET');
+  document.querySelectorAll('.sheet-link').forEach(a => {
+    if (valid) { a.href = SHEET_URL; a.classList.add('active'); }
+    else { a.removeAttribute('href'); a.classList.remove('active'); }
+  });
+}
+document.addEventListener('DOMContentLoaded', initSheetLinks);
+
+// ── ROUTER ──────────────────────────────────────
+let mapInstance = null;
+let enrichController = null;
+let _pageHistory = [];
+let _currentPage = 'home';
+
+function go(page, pushHistory = true) {
+  if (pushHistory && page !== _currentPage) {
+    _pageHistory.push(_currentPage);
+  }
+  _currentPage = page;
+  const backBtn = document.getElementById('nav-back-btn');
+  if (backBtn) backBtn.classList.toggle('visible', _pageHistory.length > 0);
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-page="${page}"]`);
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (page === 'map') {
+    setTimeout(function() {
+      if (!mapInstance) { initMap(); }
+      mapInstance.invalidateSize();
+    }, 250);
+  }
+  if (page === 'top') {
+    renderTopSpots();
+    loadTopComments();
+  }
+}
+
+function goBack() {
+  if (!_pageHistory.length) return;
+  const prev = _pageHistory.pop();
+  _currentPage = prev;
+  const backBtn = document.getElementById('nav-back-btn');
+  if (backBtn) backBtn.classList.toggle('visible', _pageHistory.length > 0);
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('page-' + prev);
+  if (el) el.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-page="${prev}"]`);
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (prev === 'map') {
+    setTimeout(function() {
+      if (!mapInstance) { initMap(); }
+      mapInstance.invalidateSize();
+    }, 250);
+  }
+  if (prev === 'top') {
+    renderTopSpots();
+    loadTopComments();
+  }
+}
+
+function goToCard(spotName, sectionPage) {
+  go(sectionPage);
+  setTimeout(() => {
+    const allCards = document.querySelectorAll(`#page-${sectionPage} .card`);
+    let target = null;
+    allCards.forEach(card => {
+      const nameEl = card.querySelector('.card-name');
+      if (nameEl && nameEl.textContent.trim() === spotName) target = card;
+    });
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.style.transition = 'box-shadow 0.3s, outline 0.3s';
+    target.style.outline = '2.5px solid var(--rust)';
+    target.style.boxShadow = '0 0 0 4px rgba(184,48,48,0.15)';
+    setTimeout(() => {
+      target.style.outline = '';
+      target.style.boxShadow = '';
+    }, 2200);
+  }, 120);
+}
+
+// ── MODAL ──────────────────────────────────────
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  if (enrichController) { enrichController.abort(); enrichController = null; }
+  const extractBtn = document.getElementById('extract-btn');
+  if (extractBtn) { extractBtn.textContent = 'Extract ↙'; extractBtn.disabled = false; }
+
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('modal-status').style.display = 'none';
+  document.getElementById('modal-status').textContent = '';
+  ['coords-badge','name-badge','lat-badge','lng-badge','url-badge',
+   'cat-badge','emoji-badge','vibe-badge','price-badge','rating-badge','hours-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+}
+
+// ── MAPS SEARCH ──────────────────────────────────────
+function searchMaps() {
+  const query = document.getElementById('m-search').value.trim();
+  if (!query) { alert('Type a place name first!'); return; }
+  const nameField = document.getElementById('m-name');
+  if (!nameField.value.trim()) {
+    nameField.value = query;
+    flashBadge('name-badge');
+  }
+  // Scoped to Lincoln, Nebraska
+  const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query + ' Lincoln Nebraska')}/@40.8136,-96.7026,13z`;
+  window.open(searchUrl, '_blank');
+}
+
+// ── PARSE MAPS URL ──────────────────────────────────────
+function parseMapsUrl(url) {
+  if (!url || url.length < 10) return;
+
+  const hintEl = document.getElementById('maps-hint');
+
+  if (/maps\.app\.goo\.gl|goo\.gl\/maps/.test(url)) {
+    document.getElementById('m-maps-url').style.borderColor = 'var(--rust)';
+    if (hintEl) hintEl.innerHTML = '⚠️ That\'s a short link — it won\'t contain coordinates. Open it in your browser first, then copy the full URL from the address bar and paste it here.';
+    return;
+  }
+  document.getElementById('m-maps-url').style.borderColor = '';
+  if (hintEl) hintEl.innerHTML = '👆 Paste the full address-bar URL after clicking on a specific place. The URL has the lat/lng baked in.';
+
+  let lat = null, lng = null;
+
+  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (atMatch) { lat = atMatch[1]; lng = atMatch[2]; }
+
+  if (!lat) {
+    const placeMatch = url.match(/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (placeMatch) { lat = placeMatch[1]; lng = placeMatch[2]; }
+  }
+  if (!lat) {
+    const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (qMatch) { lat = qMatch[1]; lng = qMatch[2]; }
+  }
+  if (!lat) {
+    const llMatch = url.match(/ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (llMatch) { lat = llMatch[1]; lng = llMatch[2]; }
+  }
+  if (!lat) {
+    const embedMatch = url.match(/maps\?.*q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (embedMatch) { lat = embedMatch[1]; lng = embedMatch[2]; }
+  }
+  if (!lat) {
+    const dataMatch = url.match(/!3d(-?\d+\.?\d+)!4d(-?\d+\.?\d+)/);
+    if (dataMatch) { lat = dataMatch[1]; lng = dataMatch[2]; }
+  }
+  if (!lat) {
+    const pbMatch = url.match(/!2d(-?\d+\.?\d+)!3d(-?\d+\.?\d+)/);
+    if (pbMatch) { lat = pbMatch[2]; lng = pbMatch[1]; }
+  }
+
+  if (lat && lng) {
+    document.getElementById('m-lat').value = lat;
+    document.getElementById('m-lng').value = lng;
+    flashBadge('lat-badge');
+    flashBadge('lng-badge');
+    flashBadge('coords-badge');
+  }
+
+  const urlField = document.getElementById('m-url');
+  if (!urlField.value.trim() && url.startsWith('http')) {
+    urlField.value = url;
+    flashBadge('url-badge');
+  }
+
+  let extractedName = document.getElementById('m-name').value.trim();
+  if (!extractedName) {
+    const placeNameMatch = url.match(/\/place\/([^/@?]+)/);
+    const searchNameMatch = url.match(/\/search\/([^/@?]+)/);
+    const rawName = placeNameMatch ? placeNameMatch[1] : (searchNameMatch ? searchNameMatch[1] : null);
+    if (rawName) {
+      try { extractedName = decodeURIComponent(rawName).replace(/\+/g, ' ').trim(); }
+      catch (e) { extractedName = rawName.replace(/\+/g, ' ').trim(); }
+      document.getElementById('m-name').value = extractedName;
+      flashBadge('name-badge');
+    }
+  }
+
+  if (extractedName) inferFromName(extractedName);
+  if (lat && lng) enrichPlace(lat, lng, url);
+}
+
+// ── INFER EMOJI + CATEGORY FROM NAME ────────────────────────────────
+function inferFromName(name) {
+  const n = name.toLowerCase();
+  const emojiEl = document.getElementById('m-emoji');
+  const catEl   = document.getElementById('m-cat');
+
+  if (!emojiEl.value.trim()) {
+    let emoji = '';
+    if (/burger|smash/.test(n))                                emoji = '🍔';
+    else if (/pizza/.test(n))                                  emoji = '🍕';
+    else if (/sushi|japanese/.test(n))                         emoji = '🍣';
+    else if (/indian|curry|oven/.test(n))                      emoji = '🍛';
+    else if (/thai/.test(n))                                   emoji = '🍜';
+    else if (/coffee|cafe|café|espresso/.test(n))             emoji = '☕';
+    else if (/brewery|brewing|brew|beer/.test(n))              emoji = '🍻';
+    else if (/cocktail|lounge|whiskey/.test(n))               emoji = '🍸';
+    else if (/bar|pub|tavern/.test(n))                        emoji = '🍺';
+    else if (/park|wilderness|prairie|garden/.test(n))        emoji = '🌿';
+    else if (/lake|creek|river/.test(n))                      emoji = '💧';
+    else if (/museum|history|art/.test(n))                    emoji = '🏛️';
+    else if (/market|farm/.test(n))                           emoji = '🥬';
+    else if (/stadium|husker|football/.test(n))               emoji = '🏈';
+    else if (/capitol|state house/.test(n))                   emoji = '🏛️';
+    if (emoji) { emojiEl.value = emoji; flashBadge('emoji-badge'); }
+  }
+
+  if (catEl.value === 'restaurant') {
+    if (/\bbar\b|pub|tavern|lounge|nightclub|brewery|brewing/.test(n)) {
+      catEl.value = 'bar'; flashBadge('cat-badge');
+    } else if (/park|wilderness|prairie|garden|lake|trail|creek|nature|audubon/.test(n)) {
+      catEl.value = 'nature'; flashBadge('cat-badge');
+    } else if (/museum|gallery|capitol|stadium|market|lied|theater|theatre|concert/.test(n)) {
+      catEl.value = 'culture'; flashBadge('cat-badge');
+    }
+  }
+}
+
+// ── ASYNC ENRICHMENT ───────────────────────────────────────────────────
+async function enrichPlace(lat, lng, mapsUrl) {
+  if (enrichController) enrichController.abort();
+  enrichController = new AbortController();
+  const signal = enrichController.signal;
+
+  const btn = document.getElementById('extract-btn');
+  if (btn) { btn.textContent = 'Fetching… ⏳'; btn.disabled = true; }
+
+  const jobs = [];
+
+  jobs.push(
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en&zoom=16`, { signal })
+      .then(r => r.json())
+      .then(d => ({ src: 'nominatim', d }))
+      .catch(() => null)
+  );
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    jobs.push(
+      fetch(`${APPS_SCRIPT_URL}?action=place_info&url=${encodeURIComponent(mapsUrl)}`, { signal })
+        .then(r => r.json())
+        .then(d => ({ src: 'backend', d }))
+        .catch(() => null)
+    );
+  }
+
+  try {
+    const results = await Promise.allSettled(jobs);
+    results.forEach(r => {
+      if (r.status !== 'fulfilled' || !r.value) return;
+      const { src, d } = r.value;
+
+      if (src === 'nominatim' && d && d.address) {
+        const a = d.address;
+        const neighborhood = a.neighbourhood || a.suburb || a.quarter || a.hamlet || '';
+        const vibeEl = document.getElementById('m-vibe');
+        if (vibeEl && !vibeEl.value.trim() && neighborhood) {
+          vibeEl.value = neighborhood;
+          flashBadge('vibe-badge');
+        }
+      }
+
+      if (src === 'backend' && d && d.ok && d.data) {
+        const info = d.data;
+        const nameEl = document.getElementById('m-name');
+        if (info.name && nameEl && !nameEl.value.trim()) {
+          nameEl.value = info.name; flashBadge('name-badge');
+        }
+        const ratingEl = document.getElementById('m-rating');
+        if (info.rating && ratingEl && !ratingEl.value.trim()) {
+          ratingEl.value = info.rating; flashBadge('rating-badge');
+        }
+        const priceEl = document.getElementById('m-price');
+        if (info.price && priceEl) {
+          const priceMap = { '$': '$', '$$': '$$', '$$$': '$$$', '$$$$': '$$$$' };
+          const p = info.price.trim();
+          if (priceMap[p]) { priceEl.value = priceMap[p]; flashBadge('price-badge'); }
+        }
+        const hoursEl = document.getElementById('m-hours');
+        if (info.hours && hoursEl && !hoursEl.value.trim()) {
+          hoursEl.value = info.hours; flashBadge('hours-badge');
+        }
+        const vibeEl = document.getElementById('m-vibe');
+        if (info.place_type && vibeEl && !vibeEl.value.trim()) {
+          vibeEl.value = info.place_type; flashBadge('vibe-badge');
+        }
+        if (info.name) inferFromName(info.name);
+      }
+    });
+  } catch (e) {
+    // enrichment failed, no problem
+  } finally {
+    const b = document.getElementById('extract-btn');
+    if (b) { b.textContent = 'Extract ↙'; b.disabled = false; }
+  }
+}
+
+function flashBadge(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── COMMENT WIDGET ─────────────────────────────────────────────────────
+function commentWidget(spotName) {
+  const safe = spotName.replace(/'/g, "\\'");
+  return `
+    <div class="comment-section" data-spot="${spotName}">
+      <div class="comment-section-bar">
+        <button class="like-btn" data-spot="${spotName}" onclick="toggleLike(this,'${safe}')">
+          ❤️ <span class="like-count">0</span>
+        </button>
+        <button class="comment-toggle" onclick="toggleComments(this)">💬 Comments</button>
+      </div>
+      <div class="comment-list">
+        <div class="comment-empty">No comments yet.</div>
+      </div>
+      <div class="comment-form">
+        <input placeholder="Your name (optional)" class="comment-author-input" />
+        <textarea placeholder="What do you think about this spot?" rows="2" class="comment-text-input"></textarea>
+        <button class="comment-submit" onclick="submitComment(this,'${safe}')">Post Comment</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleComments(btn) {
+  const section = btn.closest('.comment-section');
+  const list = section.querySelector('.comment-list');
+  const form = section.querySelector('.comment-form');
+  const isOpen = list.classList.toggle('open');
+  form.classList.toggle('open', isOpen);
+  if (isOpen) loadComments(section);
+}
+
+async function loadComments(section) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) return;
+  const spotName = section.dataset.spot;
+  const list = section.querySelector('.comment-list');
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=comments&spot=${encodeURIComponent(spotName)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.ok && data.comments && data.comments.length) {
+      list.innerHTML = data.comments.map(c => {
+        const d = new Date(c.timestamp);
+        const dateStr = isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `<div class="comment-item">
+          <span class="comment-author">${c.author || 'Anon'}</span>
+          <span class="comment-date">${dateStr}</span>
+          <span> — ${c.comment}</span>
+        </div>`;
+      }).join('');
+    } else {
+      list.innerHTML = '<div class="comment-empty">No comments yet.</div>';
+    }
+  } catch (e) {
+    list.innerHTML = '<div class="comment-empty">Couldn\'t load comments.</div>';
+  }
+}
+
+async function submitComment(btn, spotName) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    alert('Connect the Google Sheet to post comments.');
+    return;
+  }
+  const form = btn.closest('.comment-form');
+  const author = form.querySelector('.comment-author-input').value.trim() || 'Anonymous';
+  const comment = form.querySelector('.comment-text-input').value.trim();
+  if (!comment) { alert('Write something first!'); return; }
+  btn.textContent = 'Posting…'; btn.disabled = true;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'comment', spot_name: spotName, author, comment }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      form.querySelector('.comment-text-input').value = '';
+      btn.textContent = 'Posted! ✓';
+      setTimeout(() => { btn.textContent = 'Post Comment'; btn.disabled = false; }, 2000);
+      const section = form.closest('.comment-section');
+      loadComments(section);
+    }
+  } catch (e) {
+    btn.textContent = 'Error — try again';
+    setTimeout(() => { btn.textContent = 'Post Comment'; btn.disabled = false; }, 2000);
+  }
+}
+
+// ── LIKES ─────────────────────────────────────────────────────────────
+const _likedSpots = new Set(JSON.parse(localStorage.getItem('lnk_liked') || '[]'));
+
+function applyLikedState(btn, spotName) {
+  if (_likedSpots.has(spotName)) btn.classList.add('liked');
+}
+
+async function toggleLike(btn, spotName) {
+  const isLiked = _likedSpots.has(spotName);
+  const delta = isLiked ? -1 : 1;
+
+  if (isLiked) { _likedSpots.delete(spotName); btn.classList.remove('liked'); }
+  else { _likedSpots.add(spotName); btn.classList.add('liked'); }
+  localStorage.setItem('lnk_liked', JSON.stringify([..._likedSpots]));
+
+  const countEl = btn.querySelector('.like-count');
+  if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) + delta);
+
+  // Update all like buttons for this spot across the page
+  document.querySelectorAll(`.like-btn[data-spot="${spotName}"]`).forEach(b => {
+    b.classList.toggle('liked', !isLiked);
+  });
+
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'like', spot_name: spotName, delta }),
+    }).catch(() => {});
+  }
+  if (_currentPage === 'top') renderTopSpots();
+}
+
+async function loadLikeCounts() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) return;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=likes`);
+    const data = await res.json();
+    if (!data.ok) return;
+    data.likes.forEach(({ spot_name, likes }) => {
+      document.querySelectorAll(`.like-btn[data-spot="${spot_name}"] .like-count`).forEach(el => {
+        el.textContent = likes;
+      });
+    });
+  } catch (e) {}
+}
+
+// ── ALL ENTRIES (for Most Liked) ──────────────────────────────────────
+let _allEntries = [];
+
+function buildAllEntries(sheetEntries) {
+  const hardcoded = places.map(p => ({
+    name: p.name,
+    category: p.cat,
+    desc: p.desc,
+    rating: p.rating,
+    lat: p.lat,
+    lng: p.lng,
+    source: 'hardcoded',
+  }));
+  _allEntries = [...hardcoded, ...sheetEntries];
+}
+
+// ── MOST LIKED PAGE ───────────────────────────────────────────────────
+let _topFilter = 'all';
+function setTopFilter(cat) {
+  _topFilter = cat;
+  document.querySelectorAll('.liked-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  renderTopSpots();
+}
+
+function renderTopSpots() {
+  const container = document.getElementById('top-spots-list');
+  if (!container) return;
+
+  const catColors = {
+    restaurant: '#B83030',
+    bar: '#2C6882',
+    nature: '#3C6B36',
+    culture: '#6E3FAA',
+  };
+
+  let entries = _allEntries;
+  if (_topFilter !== 'all') {
+    entries = entries.filter(e => e.category === _topFilter || e.cat === _topFilter);
+  }
+
+  const getLikes = (name) => {
+    const btn = document.querySelector(`.like-btn[data-spot="${name}"] .like-count`);
+    return btn ? (parseInt(btn.textContent) || 0) : 0;
+  };
+
+  const localLikes = {};
+  document.querySelectorAll('.like-btn').forEach(btn => {
+    const name = btn.dataset.spot;
+    const count = parseInt(btn.querySelector('.like-count')?.textContent || '0');
+    if (name) localLikes[name] = Math.max(localLikes[name] || 0, count);
+  });
+
+  const sorted = [...entries].sort((a, b) => {
+    const la = localLikes[a.name] || 0;
+    const lb = localLikes[b.name] || 0;
+    return lb - la;
+  });
+
+  if (!sorted.length) {
+    container.innerHTML = '<div class="top-spot-empty">No spots yet. Like something first!</div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map((entry, i) => {
+    const likes = localLikes[entry.name] || 0;
+    const cat = entry.category || entry.cat || 'restaurant';
+    const color = catColors[cat] || '#666';
+    const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const sectionPage = cat === 'restaurant' ? 'restaurants' : cat === 'bar' ? 'bars' : cat;
+    return `
+      <div class="top-spot-card">
+        <div class="top-spot-rank ${rankClass}">${i + 1}</div>
+        <div class="top-spot-body">
+          <div class="top-spot-header">
+            <div class="top-spot-clickable" onclick="goToCard('${entry.name.replace(/'/g,"\\'")}','${sectionPage}')">
+              <div class="top-spot-name">${entry.name} <span class="top-spot-goto">→</span></div>
+            </div>
+            <span class="top-spot-cat" style="background:${color}">${catLabel}</span>
+          </div>
+          <div class="top-spot-desc">${entry.desc || ''}</div>
+          <div class="top-spot-meta">
+            <span class="top-spot-likes">❤️ ${likes}</span>
+            ${entry.rating ? `<span class="rating">${entry.rating}</span>` : ''}
+            <button class="like-btn ${_likedSpots.has(entry.name) ? 'liked' : ''}" data-spot="${entry.name}" onclick="toggleLike(this,'${entry.name.replace(/'/g,"\\'")}')">
+              ❤️ <span class="like-count">${likes}</span>
+            </button>
+          </div>
+          <div class="top-spot-comments" id="top-comments-${i}">
+            <div class="top-spot-comment-list"><div class="comment-empty">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadTopComments() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    document.querySelectorAll('.top-spot-comment-list .comment-empty').forEach(el => {
+      el.textContent = 'Connect the sheet to see comments.';
+    });
+    return;
+  }
+  const entries = _allEntries.slice(0, 10);
+  entries.forEach(async (entry, i) => {
+    const spotName = entry.name;
+    try {
+      const url = `${APPS_SCRIPT_URL}?action=comments&spot=${encodeURIComponent(spotName)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const container = document.querySelector(`#top-comments-${i} .top-spot-comment-list`);
+      if (!container) return;
+      if (data.ok && data.comments && data.comments.length) {
+        container.innerHTML = data.comments.slice(0, 3).map(c => {
+          const d = new Date(c.timestamp);
+          const dateStr = isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          return `<div class="comment-item">
+            <span class="comment-author">${c.author || 'Anon'}</span>
+            <span class="comment-date">${dateStr}</span>
+            <span> — ${c.comment}</span>
+          </div>`;
+        }).join('');
+      } else {
+        container.innerHTML = '<div class="comment-empty">No comments yet.</div>';
+      }
+    } catch(e) {}
+  });
+}
+
+// ── SUBMIT NEW ENTRY ───────────────────────────────────────────────────
+async function submitEntry() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    alert('Set up your Google Sheet and Apps Script URL first. See the setup guide!');
+    return;
+  }
+  const name = document.getElementById('m-name').value.trim();
+  const desc = document.getElementById('m-desc').value.trim();
+  if (!name || !desc) { alert('Name and description are required.'); return; }
+
+  const statusEl = document.getElementById('modal-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Submitting…';
+
+  const body = {
+    action:    'add_entry',
+    name,
+    category:  document.getElementById('m-cat').value,
+    lat:        document.getElementById('m-lat').value.trim(),
+    lng:        document.getElementById('m-lng').value.trim(),
+    desc,
+    detail:    document.getElementById('m-detail').value.trim(),
+    rating:    document.getElementById('m-rating').value.trim() || '⭐ ?',
+    url:       document.getElementById('m-url').value.trim(),
+    emoji:     document.getElementById('m-emoji').value.trim() || '📍',
+    vibe_tag:  document.getElementById('m-vibe').value.trim(),
+    must_order: document.getElementById('m-order').value.trim(),
+    price:     document.getElementById('m-price').value,
+    hours:     document.getElementById('m-hours').value.trim(),
+    added_by:  document.getElementById('m-author').value.trim() || 'Anonymous',
+  };
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    statusEl.textContent = data.ok ? '✓ Spot submitted! It\'ll appear after a refresh.' : `Error: ${data.error}`;
+    if (data.ok) {
+      setTimeout(closeModal, 2500);
+      loadSheetEntries();
+    }
+  } catch (e) {
+    statusEl.textContent = 'Network error — try again.';
+  }
+}
+
+// ── LOAD SHEET ENTRIES (community spots) ─────────────────────────────
+const CAT_SECTIONS = {
+  restaurant: 'live-restaurants',
+  bar:        'live-bars',
+  nature:     'live-nature',
+  culture:    'live-culture',
+};
+
+async function loadSheetEntries() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  try {
+    const res   = await fetch(`${APPS_SCRIPT_URL}?action=entries`);
+    const data  = await res.json();
+    if (!data.ok || !data.entries) return;
+
+    // Group by category and inject cards
+    const grouped = { restaurant: [], bar: [], nature: [], culture: [] };
+    data.entries.forEach(e => {
+      if (grouped[e.category]) grouped[e.category].push(e);
+    });
+
+    Object.entries(grouped).forEach(([cat, entries]) => {
+      const containerId = CAT_SECTIONS[cat];
+      if (!containerId) return;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      if (!entries.length) {
+        container.innerHTML = '<div class="loading-cards">No community spots yet — add the first one!</div>';
+        return;
+      }
+      container.innerHTML = entries.map(e => `
+        <div class="card" data-maps-url="${e.url || ''}">
+          <div class="card-top">
+            <div class="card-name">${e.name}</div>
+            <div class="card-right">
+              <span class="card-emoji">${e.emoji || '📍'}</span>
+              ${e.rating ? `<span class="rating">${e.rating}</span>` : ''}
+            </div>
+          </div>
+          ${e.vibe_tag ? `<span class="vibe-tag">${e.vibe_tag}</span>` : ''}
+          <p class="card-desc">${e.desc || ''}</p>
+          ${e.must_order ? `<div class="must-order">🏆 ${e.must_order}</div>` : ''}
+          <div class="card-footer">
+            <span class="card-meta">${e.price || ''} ${e.hours || ''} · Added by ${e.added_by || 'Anonymous'}</span>
+            ${e.url ? `<a class="card-link" href="${e.url}" target="_blank">↗ Maps</a>` : ''}
+          </div>
+        </div>
+      `).join('');
+    });
+
+    // Merge into _allEntries
+    const sheetEntries = data.entries.map(e => ({
+      name: e.name,
+      category: e.category,
+      desc: e.desc,
+      rating: e.rating,
+      lat: parseFloat(e.lat), lng: parseFloat(e.lng),
+      source: 'sheet',
+    }));
+    buildAllEntries(sheetEntries);
+
+    // Inject comment widgets into new cards
+    injectCommentWidgets();
+    loadLikeCounts();
+  } catch (e) {
+    console.warn('Could not load sheet entries:', e);
+  }
+}
+
+// ── HARDCODED MAP DATA ─────────────────────────────────────────────────
+const CAT_COLOR = {
+  restaurant: '#B83030',
+  bar:        '#2C6882',
+  nature:     '#3C6B36',
+  culture:    '#6E3FAA',
+};
+
+const places = [
+  // RESTAURANTS
+  { name:'The Green Gateau',            cat:'restaurant', lat:40.8168, lng:-96.7035, desc:'🥐 Lincoln breakfast institution. House-baked pastries, quiches, and a charming 1890s building.', detail:'Arrive before opening on weekends. Worth the wait.', rating:'⭐ 4.7' },
+  { name:'Bread & Cup',                 cat:'restaurant', lat:40.8198, lng:-96.7127, desc:'🍳 Haymarket brunch institution. Seasonal menu, house-made bread, weekend social anchor.', detail:'Try the eggs Benedict. Order a pastry too.', rating:'⭐ 4.6' },
+  { name:"Honest Abe's Burgers",        cat:'restaurant', lat:40.8155, lng:-96.7050, desc:'🍔 Best smash burgers in Lincoln. Thin, caramelized crust, brioche bun, excellent fries.', detail:'Get there by 11:30 before the lunch rush.', rating:'⭐ 4.6' },
+  { name:'Bison Witches Bar & Deli',    cat:'restaurant', lat:40.8200, lng:-96.7122, desc:'🥪 Half deli, half bar. Giant sandwiches on house bread + Nebraska craft taps.', detail:'The Reuben is the move. Crowded on game days.', rating:'⭐ 4.5' },
+  { name:"Lazlo's Brewery & Grill",     cat:'restaurant', lat:40.8195, lng:-96.7125, desc:'🍺 Lincoln\'s original brewpub. House-brewed beer, prime rib sandwich, all-day menu.', detail:'House IPA + onion rings = the combo.', rating:'⭐ 4.4' },
+  { name:'The Oven',                    cat:'restaurant', lat:40.8197, lng:-96.7108, desc:'🍛 Best Indian restaurant in Nebraska. Exceptional tandoori, deep curries, lunch buffet.', detail:'Mango lassi is mandatory. Lunch buffet = best value.', rating:'⭐ 4.6' },
+  { name:"Vincenzo's Ristorante",       cat:'restaurant', lat:40.8175, lng:-96.7052, desc:'🍝 Classic Italian, Lincoln staple. Handmade pastas, veal dishes, proper tiramisu.', detail:'Reserve on weekends. Wine list is solid.', rating:'⭐ 4.5' },
+  { name:'Lan Vietnamese Restaurant',   cat:'restaurant', lat:40.8050, lng:-96.6900, desc:'🍜 Lincoln\'s best pho. Slow-cooked broth, fresh bánh mì, Vietnamese iced coffee.', detail:'Order the large. The broth is the real thing.', rating:'⭐ 4.7' },
+  { name:'Venue Restaurant & Lounge',   cat:'restaurant', lat:40.8197, lng:-96.7122, desc:'🔥 Lincoln\'s upscale dinner spot. Filet, pork belly starter, Haymarket brick-and-beam interior.', detail:'Reserve ahead. Pork belly starter first.', rating:'⭐ 4.7' },
+  { name:'Plank Seafood Provisions',    cat:'restaurant', lat:40.8198, lng:-96.7127, desc:'🦞 Fresh seafood in landlocked Nebraska — and it works. Daily fish, serious kitchen.', detail:'Oysters + whole fish of the day = right call.', rating:'⭐ 4.8' },
+  { name:"Misty's Restaurant & Lounge", cat:'restaurant', lat:40.8170, lng:-96.6400, desc:'🥩 Prime rib institution since 1966. Carved tableside, legendary salad bar, old-fashioned bar.', detail:'Order the queen cut. Hit the salad bar.', rating:'⭐ 4.5' },
+  { name:'Leadbelly',                   cat:'restaurant', lat:40.8160, lng:-96.7045, desc:'🍹 Serious cocktail bar + creative food. Seasonal drinks, charcuterie, small plates.', detail:'Let the bartender guide you. Go for both drinks and food.', rating:'⭐ 4.8' },
+  { name:'Single Barrel',               cat:'restaurant', lat:40.8210, lng:-96.7130, desc:'🥃 Whiskey-focused bar and kitchen. Smoked meats, elevated snacks, great bourbon list.', detail:'Ask about the whiskey flight. The burger is worth it.', rating:'⭐ 4.6' },
+  { name:"Boitano's",                   cat:'restaurant', lat:40.8168, lng:-96.7037, desc:"🍕 Lincoln's best late-night pizza. Thin crust, proper char, walk-in friendly.", detail:'Calzone is underrated. Works after a Zoo Bar show.', rating:'⭐ 4.5' },
+  { name:'Runza',                       cat:'restaurant', lat:40.8150, lng:-96.7020, desc:'🥟 Nebraska-only chain since 1949. Warm bread pocket with beef, cabbage, onions.', detail:'Original Runza + onion rings. It\'s $7 — just do it.', rating:'⭐ 4.4' },
+
+  // BARS
+  { name:'The Zoo Bar',                 cat:'bar', lat:40.8170, lng:-96.7037, desc:'🎸 One of America\'s great blues bars. Live music almost nightly since 1973.', detail:'Check the schedule. Stand close to the stage.', rating:'⭐ 4.8' },
+  { name:"Duffy's Tavern",              cat:'bar', lat:40.8168, lng:-96.7037, desc:'🍻 Lincoln\'s oldest dive bar. Cheap beer, good jukebox, regulars since forever.', detail:'Go on a Tuesday. Sit at the bar and talk to someone.', rating:'⭐ 4.5' },
+  { name:'Knickerbockers',              cat:'bar', lat:40.8165, lng:-96.7038, desc:'🎵 Lincoln\'s indie/punk live music venue. Small, loud, great energy.', detail:'Check the calendar. All-ages shows, 21+ at bar.', rating:'⭐ 4.6' },
+  { name:'D.C. Haymakers',              cat:'bar', lat:40.8197, lng:-96.7120, desc:'🌾 Haymarket anchor bar. Great patio, solid food menu, all-day.', detail:'Best on a warm afternoon. Patio fills fast.', rating:'⭐ 4.6' },
+  { name:'HiPo',                        cat:'bar', lat:40.8195, lng:-96.7115, desc:'🍸 Lincoln\'s most serious craft cocktail bar. Seasonal, ingredient-driven, intimate.', detail:'Sit at the bar. Ask for a recommendation.', rating:'⭐ 4.8' },
+  { name:"Barry's Bar & Grill",         cat:'bar', lat:40.8168, lng:-96.7059, desc:'🏆 O Street sports bar. All games, loaded fries, proper game-day energy.', detail:'Get there early for Husker games. Loaded fries mandatory.', rating:'⭐ 4.5' },
+  { name:'Nebraska Brewing Company',    cat:'bar', lat:40.8050, lng:-96.6800, desc:'🌽 Nebraska\'s most decorated craft brewery. GABF medalist, great taproom, patio.', detail:'Ask about cask or just-tapped releases.', rating:'⭐ 4.7' },
+  { name:'Zipline Brewing Co.',         cat:'bar', lat:40.8190, lng:-96.7200, desc:'⚡ Lincoln craft brewery. Cooper Lager flagship, rotating taps, dog friendly.', detail:'Tasting flight on first visit. Food trucks on weekends.', rating:'⭐ 4.6' },
+  { name:'The Railyard',                cat:'bar', lat:40.8178, lng:-96.7080, desc:'🏙️ Outdoor entertainment hub. Multiple venues, live music stage, warm-night energy.', detail:'Check event schedule. Best on warm evenings with a show.', rating:'⭐ 4.4' },
+
+  // NATURE
+  { name:'Wilderness Park',             cat:'nature', lat:40.7850, lng:-96.6950, desc:'🌲 Largest municipal urban park in the US. 1,400+ acres of forest and prairie trails.', detail:'20+ miles of trails. Bring water — further than it looks.', rating:'⭐ 4.7' },
+  { name:'Pioneers Park & Nature Center', cat:'nature', lat:40.8100, lng:-96.7500, desc:'🦬 668 acres with bison, elk, native prairie, and a great nature center.', detail:'Walk the bison prairie trail at sunrise.', rating:'⭐ 4.7' },
+  { name:'Sunken Gardens',              cat:'nature', lat:40.8030, lng:-96.7215, desc:'🌸 One of the best public gardens in the Midwest. 30,000+ plants, koi pond.', detail:'Best June–September. Evening light is beautiful.', rating:'⭐ 4.8' },
+  { name:'Holmes Lake Park',            cat:'nature', lat:40.7730, lng:-96.6380, desc:'🎣 90-acre urban lake. Perimeter trail, fishing, disc golf, kayak launch.', detail:'Perimeter trail is 2.5 miles. Fish at dawn.', rating:'⭐ 4.6' },
+  { name:'Branched Oak Lake',           cat:'nature', lat:40.9420, lng:-96.8050, desc:'⛵ 1,800+ acre reservoir. Sandy beach, swimming, sailing, camping. Best lake day from Lincoln.', detail:'Reserve camping early for summer weekends.', rating:'⭐ 4.8' },
+  { name:'Indian Cave State Park',      cat:'nature', lat:40.3200, lng:-95.5700, desc:'🏞️ Most scenic hiking in eastern Nebraska. Missouri River bluffs, 20+ miles of trails.', detail:'Go on a weekday. Parking fills on summer weekends.', rating:'⭐ 4.8' },
+  { name:'Spring Creek Prairie',        cat:'nature', lat:40.8900, lng:-96.8900, desc:'🦅 Rare intact tallgrass prairie. Exceptional birdwatching, tall grasses, Audubon Center.', detail:'Dawn bird walk in July. Bring binoculars.', rating:'⭐ 4.7' },
+
+  // CULTURE
+  { name:'Nebraska State Capitol',      cat:'culture', lat:40.8077, lng:-96.6992, desc:'🏛️ One of the great American buildings. 1932 Art Deco tower. Interior mosaics are world-class.', detail:'Take the guided tour. Look up constantly inside.', rating:'⭐ 4.9' },
+  { name:'Sheldon Museum of Art',       cat:'culture', lat:40.8197, lng:-96.7027, desc:'🎨 World-class university art museum. Philip Johnson building + major American collection.', detail:'Walk the sculpture garden. Free admission.', rating:'⭐ 4.8' },
+  { name:'International Quilt Museum',  cat:'culture', lat:40.8228, lng:-96.6989, desc:'🪡 World\'s largest public quilt collection. 5,000+ quilts across centuries and cultures.', detail:'Budget 2 hours. Consistently surprises people.', rating:'⭐ 4.8' },
+  { name:'Nebraska History Museum',     cat:'culture', lat:40.8077, lng:-96.7002, desc:'📜 State history museum. Strong Native American collections, free admission.', detail:'Indigenous history galleries are the highlight.', rating:'⭐ 4.6' },
+  { name:'Haymarket Farmer\'s Market',  cat:'culture', lat:40.8198, lng:-96.7127, desc:'🥬 250+ vendors every Saturday May–October. Best farmer\'s market in the Midwest.', detail:'Arrive early. Get honey from a local beekeeper.', rating:'⭐ 4.8' },
+  { name:'Haymarket Historic District', cat:'culture', lat:40.8198, lng:-96.7130, desc:'🧱 10-block district of converted 1800s brick warehouses. Restaurants, bars, galleries.', detail:'Start here if you\'re unsure where to go.', rating:'⭐ 4.7' },
+  { name:'Lied Center for Performing Arts', cat:'culture', lat:40.8228, lng:-96.6990, desc:'🎭 World-class performing arts venue. Broadway tours, orchestras, exceptional acoustics.', detail:'Check liedcenter.org before your visit.', rating:'⭐ 4.9' },
+  { name:'Memorial Stadium',            cat:'culture', lat:40.8199, lng:-96.7057, desc:'🏈 90,000+ fans on game day. Longest active sellout streak in college football since 1962.', detail:'Tailgate in the morning. Wear red. Experience it once.', rating:'⭐ 4.9' },
+  { name:'National Museum of Roller Skating', cat:'culture', lat:40.7920, lng:-96.7100, desc:'🛼 World\'s only roller skating museum. 200 years of artifacts. Free admission.', detail:'Free. 45 minutes. Best conversation starter of the trip.', rating:'⭐ 4.5' },
+];
+
+// ── MAP INIT ──────────────────────────────────────────────────────────
+function makePin(color) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:13px;height:13px;
+      background:${color};
+      border:2.5px solid rgba(255,255,255,0.95);
+      border-radius:50%;
+      box-shadow:0 1px 5px rgba(0,0,0,0.45);
+    "></div>`,
+    iconSize: [13,13],
+    iconAnchor: [6,6],
+    popupAnchor: [0,-9],
+  });
+}
+
+// ── INJECT LIKES + COMMENTS INTO ALL CARDS ────────────────────────────
+function injectCommentWidgets() {
+  document.querySelectorAll('.card').forEach(card => {
+    const nameEl = card.querySelector('.card-name');
+    if (!nameEl) return;
+    const spotName = nameEl.textContent.trim();
+
+    const footer = card.querySelector('.card-footer');
+    if (footer) {
+      const existingLink = footer.querySelector('.card-link');
+      const mapsUrl   = existingLink ? existingLink.href : (card.dataset.mapsUrl || '');
+      const mapsLabel = existingLink ? existingLink.textContent.trim()
+        : (mapsUrl.includes('google.com/maps') ? '↗ Maps' : '↗ Site');
+
+      footer.querySelectorAll('.card-link, .card-action-row, .like-btn').forEach(el => el.remove());
+
+      if (mapsUrl) {
+        const mapsLink = document.createElement('a');
+        mapsLink.className = 'card-link';
+        mapsLink.href = mapsUrl;
+        mapsLink.target = '_blank';
+        mapsLink.rel = 'noopener noreferrer';
+        mapsLink.textContent = mapsLabel;
+        mapsLink.addEventListener('click', e => e.stopPropagation());
+        footer.appendChild(mapsLink);
+      }
+    }
+
+    if (!card.querySelector('.comment-section')) {
+      const widget = document.createElement('div');
+      widget.innerHTML = commentWidget(spotName);
+      card.appendChild(widget.firstElementChild);
+    }
+    const likeBtn = card.querySelector('.like-btn');
+    if (likeBtn) applyLikedState(likeBtn, spotName);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  buildAllEntries([]);
+  injectCommentWidgets();
+  loadSheetEntries();
+  loadLikeCounts();
+});
+
+function initMap() {
+  mapInstance = L.map('map', {
+    center: [40.8136, -96.7026],
+    zoom: 13,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    maxZoom: 19,
+  }).addTo(mapInstance);
+
+  places.forEach(p => {
+    const color  = CAT_COLOR[p.cat];
+    const catLbl = p.cat.charAt(0).toUpperCase() + p.cat.slice(1);
+    const marker = L.marker([p.lat, p.lng], { icon: makePin(color) });
+    marker.bindPopup(`
+      <div style="font-family:'Space Mono',monospace;font-size:0.68rem;line-height:1.65;min-width:195px;max-width:230px;">
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#1C1C28;margin-bottom:0.3rem;">${p.name}</div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="display:inline-block;font-size:0.46rem;letter-spacing:0.15em;text-transform:uppercase;background:${color};color:#fff;padding:0.12rem 0.4rem;border-radius:2px;">${catLbl}</span>
+          <span style="font-size:0.62rem;font-weight:700;background:#D4A030;color:#1C1C28;padding:0.1rem 0.35rem;border-radius:2px;margin-left:0.3rem;">${p.rating}</span>
+        </div>
+        <div style="color:#3D2E1A;margin-bottom:0.45rem;">${p.desc}</div>
+        <div style="font-size:0.58rem;color:#2C6882;border-left:2px solid #2C6882;padding-left:0.4rem;line-height:1.55;">💡 ${p.detail}</div>
+      </div>
+    `, { maxWidth: 250 });
+    marker.addTo(mapInstance);
+  });
+}
+</script>
+
+</body>
+</html>
