@@ -25,6 +25,7 @@
   --c-bar: #2C6882;
   --c-nature: #3C6B36;
   --c-culture: #6E3FAA;
+  --c-gallery: #A06030;
 }
 html { scroll-behavior: smooth; }
 body {
@@ -89,6 +90,7 @@ nav {
 .nav-btn.active[data-page="bars"]::after    { background: var(--c-bar); }
 .nav-btn.active[data-page="nature"]::after  { background: var(--c-nature); }
 .nav-btn.active[data-page="culture"]::after { background: var(--c-culture); }
+.nav-btn.active[data-page="galleries"]::after { background: var(--c-gallery); }
 .nav-btn.active[data-page="map"]::after     { background: var(--gold); }
 .nav-btn.active[data-page="top"]::after     { background: var(--rust); }
 .nav-back {
@@ -633,6 +635,7 @@ nav {
     <button class="nav-btn"        data-page="bars"        onclick="go('bars')">🍺 Bars</button>
     <button class="nav-btn"        data-page="nature"      onclick="go('nature')">🌿 Nature</button>
     <button class="nav-btn"        data-page="culture"     onclick="go('culture')">🎨 Culture</button>
+    <button class="nav-btn"        data-page="galleries"   onclick="go('galleries')">🖼 Galleries</button>
     <button class="nav-btn"        data-page="map"         onclick="go('map')">🗺 Map</button>
     <button class="nav-btn"        data-page="top"         onclick="go('top')">❤️ Most Liked</button>
   </div>
@@ -685,6 +688,14 @@ nav {
       <div class="tile-name">Culture & Events</div>
       <div class="tile-count">12 spots · Capitol to Haymarket</div>
       <div class="tile-desc">The most underrated state capitol building in America, a world-class art museum, the Railyard, the Farmer's Market, and more.</div>
+      <span class="tile-arrow">↗</span>
+    </div>
+    <div class="home-tile" onclick="go('galleries')">
+      <span class="tile-dot" style="background:var(--c-gallery)"></span>
+      <span class="tile-icon">🖼️</span>
+      <div class="tile-name">Art Galleries</div>
+      <div class="tile-count">9 galleries · First Friday monthly</div>
+      <div class="tile-desc">The Burkholder Project, Kiechel Fine Art, Gallery 9, LUX Center, and more. First Fridays bring 50+ venues to life the first Friday of every month.</div>
       <span class="tile-arrow">↗</span>
     </div>
     <div class="home-tile" onclick="go('map')">
@@ -1532,6 +1543,273 @@ nav {
   </footer>
 </div>
 
+<!-- GALLERIES -->
+<div class="page" id="page-galleries">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow" style="color:var(--c-gallery)">🖼 Lincoln, NE Field Guide</div>
+      <h2 class="page-title">Art Galleries</h2>
+      <p class="page-sub">Lincoln has a deeper gallery scene than most people expect. Working artist studios, co-op galleries, nationally ranked museums — and a monthly First Friday that turns the whole downtown into one big gallery walk.</p>
+    </div>
+    <div class="page-header-right">By Zach<br>First Fridays monthly<br>Most free admission</div>
+  </div>
+
+  <!-- FIRST FRIDAY SPOTLIGHT -->
+  <div class="csection" style="background:var(--ink); color:var(--sand);">
+    <div class="csection-header">
+      <span class="csection-emoji">🗓</span>
+      <h3 class="csection-label" style="color:var(--gold)">First Friday Art Walk</h3>
+      <span class="csection-tag" style="background:var(--c-gallery);color:#fff">Every 1st Friday · 5–10pm</span>
+    </div>
+    <p class="csection-sub" style="color:rgba(240,232,208,0.72)">Every first Friday of the month, 50+ downtown galleries, studios, and businesses open their doors simultaneously — new exhibitions, artist receptions, free admission. The best single night on Lincoln's arts calendar. No tickets, no cover. Just show up and wander.</p>
+    <div id="ff-dates-gallery" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;"></div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;margin-top:0.25rem;">
+      <div style="font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,160,48,0.75);margin-bottom:0.85rem">March 6 First Friday · Confirmed events</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.85rem;">
+        <div style="border:1px solid rgba(255,255,255,0.1);padding:0.9rem 1rem;background:rgba(255,255,255,0.04);">
+          <div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-gallery);margin-bottom:0.3rem">LUX Center · Mar 6 · noon–8pm</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;margin-bottom:0.3rem">Weaving Through Nebraska</div>
+          <div style="font-size:0.6rem;color:rgba(240,232,208,0.6);line-height:1.7">Handweavers Guild of Lincoln · Community Gallery + "Endora and Friends" by Joseph Cavalieri (East Gallery) · Free · Refreshments included</div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,0.1);padding:0.9rem 1rem;background:rgba(255,255,255,0.04);">
+          <div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-gallery);margin-bottom:0.3rem">Int'l Quilt Museum · Mar 6 · 4–7pm</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;margin-bottom:0.3rem">Remember the Way — Heather Hensen</div>
+          <div style="font-size:0.6rem;color:rgba(240,232,208,0.6);line-height:1.7">Free admission during First Friday window 4–7pm · 1523 N 33rd St · UNL East Campus</div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,0.1);padding:0.9rem 1rem;background:rgba(255,255,255,0.04);">
+          <div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-gallery);margin-bottom:0.3rem">Kiechel Fine Art · Mar 6 · open until 8pm</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;margin-bottom:0.3rem">James Eisentrager Exhibition</div>
+          <div style="font-size:0.6rem;color:rgba(240,232,208,0.6);line-height:1.7">On view in the third floor gallery · Note: Color Fields (Chad M. Olsen) opening is March 20, 5–8pm — separate event</div>
+        </div>
+      </div>
+      <div style="margin-top:0.75rem;font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,160,48,0.75);margin-bottom:0.85rem">Long-running exhibitions</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.85rem;">
+        <div style="border:1px solid rgba(255,255,255,0.1);padding:0.9rem 1rem;background:rgba(255,255,255,0.04);">
+          <div style="font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-gallery);margin-bottom:0.3rem">Sheldon Museum of Art · Through July 5</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;margin-bottom:0.3rem">American Identity in Art</div>
+          <div style="font-size:0.6rem;color:rgba(240,232,208,0.6);line-height:1.7">How artists reflect the American experience · 250th anniversary · Companion: Artists Abroad · Both free</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;font-size:0.58rem;color:rgba(240,232,208,0.45)">For full monthly listings → <a href="https://downtownlincoln.org/explore/first-friday" target="_blank" style="color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(212,160,48,0.4)">downtownlincoln.org/explore/first-friday</a></div>
+    </div>
+  </div>
+
+  <!-- HAYMARKET & DOWNTOWN -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏛️</span>
+      <h3 class="csection-label">Haymarket & Downtown</h3>
+      <span class="csection-tag" style="background:var(--c-gallery)">Gallery District</span>
+    </div>
+    <p class="csection-sub">The Haymarket and O Street corridor is the densest concentration of gallery space in Lincoln — walkable, eclectic, and best experienced on a First Friday when everything is open simultaneously.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Burkholder+Project+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">The Burkholder Project</div>
+          <div class="card-right"><span class="card-emoji">🏗️</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Working Studios · 719 P St · Haymarket · 36 Studios · Since 1987</span>
+        <p class="card-desc">Lincoln's first Haymarket gallery — and still the most immersive. A converted 1880s carpet factory with 36 working artist studios across three levels of galleries, connected by a sun-filled atrium. You can watch painters paint, sculptors sculpt, photographers print 🎨. Four show openings every month. Two-time Best Gallery in Nebraska. This is what makes Lincoln's art scene different: artists actually here, actually working, actually willing to talk to you.</p>
+        <div class="must-order">🏆 Do: Walk all three gallery levels · Watch artists at work · Ask questions — they want you to</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 719 P St · Haymarket · Wed–Fri 11am–5pm · Sat 10am–4pm · First Friday participant</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Burkholder+Project+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Kiechel+Fine+Art+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Kiechel Fine Art</div>
+          <div class="card-right"><span class="card-emoji">🖼️</span><span class="rating top">⭐ 4.9</span></div>
+        </div>
+        <span class="vibe-tag">Fine Art · 1208 O St · Est. 1986 · American Masters + Contemporary</span>
+        <p class="card-desc">The blue-chip gallery of Lincoln's art scene — in business since 1986, representing estates of notable artists, placing work in museums and corporate collections worldwide. Specializes in 19th and 20th century American Art, Old Master prints, and regional contemporary 🖼️. Currently showing James Eisentrager (third floor) and the upcoming Chad M. Olsen "Color Fields" opening March 20 (5–8pm). Certified appraisal services on-site. Worth visiting just to see what serious gallery programming looks like.</p>
+        <div class="must-order">🏆 Do: Ask about current exhibitions · Check upcoming opening receptions · Mar 20: Color Fields opening 5–8pm</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 1208 O St · Tue–Thu 10am–6pm · Fri 10am–8pm · Sat 11am–5pm · Sun/Mon closed</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Kiechel+Fine+Art+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Gallery+Nine+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Gallery 9</div>
+          <div class="card-right"><span class="card-emoji">🎭</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Co-op Gallery · 124 S 9th St · Mission Arts Building · Since 1994</span>
+        <p class="card-desc">An independent artist cooperative in the historic Mission Arts Building — one of the more interesting buildings in Lincoln's arts district, home to artist studios, arts-related businesses, and residencies 🎭. Gallery 9 has been running monthly solo, two-person, and group shows since 1994. The cooperative model means you're seeing work curated by and for working artists rather than commercial interests. Monthly schedule keeps the shows fresh.</p>
+        <div class="must-order">🏆 Do: Check monthly show schedule · Solo shows give the work room to breathe</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 124 S 9th St · Wed–Sat 11am–5pm · Sun noon–5pm · Mon–Tue closed</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Gallery+Nine+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Clements+Noyes+Art+Gallery+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Clements Noyes Art Gallery</div>
+          <div class="card-right"><span class="card-emoji">🎨</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Co-op · 119 S 9th St · 100+ Artists · Since 1993 · Affordable</span>
+        <p class="card-desc">The most accessible gallery in Lincoln — 100+ local and regional artists in a warm co-op space near the Haymarket. Original paintings, photography, pottery, jewelry, and gifts at prices that don't require a long conversation with your accountant 🎨. Monthly workshops open to all skill levels. First Friday receptions are genuinely social: food, the artists present, an easy way into the local arts community. Great for buying art you'll actually live with.</p>
+        <div class="must-order">🏆 Do: First Friday reception (6:30–9pm) · Browse the monthly show · Talk to the artists</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 119 S 9th St · Mon–Sat 10am–5pm · First Friday 6:30–9pm</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Clements+Noyes+Art+Gallery+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Metro+Gallery+Nebraska+Lincoln">
+        <div class="card-top">
+          <div class="card-name">Metro Gallery Nebraska</div>
+          <div class="card-right"><span class="card-emoji">🗺️</span><span class="rating">⭐ 4.6</span></div>
+        </div>
+        <span class="vibe-tag">Large Collection · 1316 N St · Nebraska History Art · 5,000+ Works</span>
+        <p class="card-desc">Part gallery, part mini-museum of Lincoln and Nebraska. 5,000+ works of art on consignment plus original and reproduction maps of Nebraska dating to the 1850s that document the state's history in ways no photograph can 🗺️. The map collection alone is worth the visit for history enthusiasts. Cleaning, restoration, leasing, and custom exhibit services available. Monthly First Friday event. Underrated and often overlooked.</p>
+        <div class="must-order">🏆 Do: Ask to see the historic map collection · First Friday monthly event</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 1316 N St #101 · Mon–Tue 11am–5:30pm · Wed 11am–7pm · Thu–Fri 11am–5:30pm · Sat noon–4pm</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Metro+Gallery+Nebraska+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Great+Plains+Art+Museum+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Great Plains Art Museum</div>
+          <div class="card-right"><span class="card-emoji">🌾</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Regional Art · 1155 Q St · Prairie + Western · Free · UNL</span>
+        <p class="card-desc">Dedicated entirely to the art of the Great Plains — and it's more compelling than that description makes it sound. Bronzes, paintings, photography, and sculpture capturing the landscape, culture, and people of the American interior 🌾. Strong Native American and western art collections. Small but well-curated. Free admission. Often hosts First Friday programming. Worth 45 minutes for anyone with any interest in regionalism, landscape, or American western art.</p>
+        <div class="must-order">🏆 Do: Bronze sculpture collection · Native American art galleries · Free and genuinely good</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 1155 Q St · Tue–Sat 10am–5pm · First Friday participant</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Great+Plains+Art+Museum+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/WallSpace+LNK+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">WallSpace LNK</div>
+          <div class="card-right"><span class="card-emoji">📸</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Contemporary · 1624 S 17th St · Nonprofit · Photography + Plains Art</span>
+        <p class="card-desc">A newer but fast-growing force in Lincoln's gallery scene — founded 2022, restructured as a nonprofit arts space in 2024. Monthly exhibitions of contemporary fine art with a focus on photography and plains-themed work 📸. Gallery talks, screenings, and artist receptions run alongside each show. The nonprofit model keeps it mission-driven rather than commercial. Open Fri–Sun only; check the calendar before visiting.</p>
+        <div class="must-order">🏆 Do: Check the monthly show · Gallery talks are worth catching · Photography-forward exhibitions</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 1624 S 17th St Ste 300 · Fri–Sun noon–5pm · Monthly exhibitions</span>
+          <a class="card-link" href="https://www.google.com/maps/search/WallSpace+Lincoln+Nebraska+gallery" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Constellation+Studios+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Constellation Studios</div>
+          <div class="card-right"><span class="card-emoji">🖨️</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Printmaking · 2055 O St · Working Studio · Specialized · Since 2013</span>
+        <p class="card-desc">One of the most specialized fine art spaces in Lincoln — a working printmaking, papermaking, and bookmaking studio in a historic refurbished building 🖨️. Founded by internationally renowned printmaker Karen Kunc. The gallery showcases fine art prints; the classes and workshops teach traditional and innovative techniques to emerging artists. First Friday open studio hours are typically 6–8pm. A deep dive into a corner of the art world most people don't know exists.</p>
+        <div class="must-order">🏆 Do: First Friday 6–8pm open studio · Ask about printmaking workshops · Unique specialty you won't find elsewhere</div>
+        <div class="card-footer">
+          <span class="card-meta">· 2055 O St · First Friday 6–8pm · Verify current hours · constellation-studios.net</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Constellation+Studios+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Michael+Forsberg+Gallery+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Michael Forsberg Gallery</div>
+          <div class="card-right"><span class="card-emoji">🦅</span><span class="rating">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">Conservation Photography · 100 N 8th St · Great Plains Wildlife · National Geographic</span>
+        <p class="card-desc">The gallery of Nebraska conservation photographer Michael Forsberg — whose images have appeared in National Geographic, Audubon, and Nature Conservancy 🦅. Fine art prints of the Great Plains, Platte River crane migration, prairie ecosystems, and Nebraska wildlife. Work that has traveled nationally in solo exhibitions and ended up in public and private collections across the country. If you've ever felt the Great Plains landscape was worth paying attention to, this gallery will confirm it.</p>
+        <div class="must-order">🏆 Do: Crane migration photography · Great Plains landscape series · Support a working conservation photographer</div>
+        <div class="card-footer">
+          <span class="card-meta">· 100 N 8th St · Mon–Sat 10am–6pm · First Friday participant</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Michael+Forsberg+Gallery+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Tugboat+Gallery+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Tugboat Gallery</div>
+          <div class="card-right"><span class="card-emoji">⚓</span><span class="rating">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Experimental · ~120 N 14th St · Non-Commercial · 500+ Artists Since 2005</span>
+        <p class="card-desc">The underground choice. Non-commercial, non-commission, all-volunteer gallery that has exhibited 500+ artists since 2005 ⚓. Exists specifically to give showing opportunities to experimental work, underrepresented artists, and nonconformist art that won't fit anywhere else. Located above Gomez Art Supply. A First Friday staple for people who want something different from the polished gallery circuit. Check tugboat.gallery for current hours — it runs on volunteer time.</p>
+        <div class="must-order">🏆 Do: First Friday visit · Whatever's on rotation this month · Buy something weird</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · ~120 N 14th St · Check tugboat.gallery for hours · First Friday staple</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Tugboat+Gallery+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ANCHOR MUSEUMS -->
+  <div class="csection">
+    <div class="csection-header">
+      <span class="csection-emoji">🏛️</span>
+      <h3 class="csection-label">Anchor Museums</h3>
+      <span class="csection-tag" style="background:var(--ink)">World-Class Collection</span>
+    </div>
+    <p class="csection-sub">Two museums that would be major draws in any city — and in Lincoln they're free, rarely crowded, and almost always have something genuinely worth seeing.</p>
+    <div class="card-grid">
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/Sheldon+Museum+Art+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">Sheldon Museum of Art</div>
+          <div class="card-right"><span class="card-emoji">🎨</span><span class="rating top">⭐ 4.8</span></div>
+        </div>
+        <span class="vibe-tag">451 N 12th St · UNL · Philip Johnson Building · Free · World-Class</span>
+        <p class="card-desc">One of the best university art museums in the country, full stop. The Philip Johnson building (1963) is a landmark of modern architecture, and the collection inside earns it: 12,000+ works spanning 19th–20th century American art, with a sculpture garden featuring 30+ large-scale pieces 🎨. Current show: <em>American Identity in Art</em> (through July 5, 2026) — examining how artists reflect the American experience as the country marks its 250th anniversary. Free. Open six days a week. First Friday participant.</p>
+        <div class="must-order">🏆 Do: American Identity in Art · Sculpture garden · Architecture as much as the collection inside</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 451 N 12th St · Tue–Wed/Fri–Sat 10am–5pm · Thu 10am–7pm · Sun noon–5pm</span>
+          <a class="card-link" href="https://www.google.com/maps/search/Sheldon+Museum+Art+UNL+Lincoln" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+      <div class="card" data-maps-url="https://www.google.com/maps/search/LUX+Center+Arts+Lincoln+Nebraska">
+        <div class="card-top">
+          <div class="card-name">LUX Center for the Arts</div>
+          <div class="card-right"><span class="card-emoji">✨</span><span class="rating top">⭐ 4.7</span></div>
+        </div>
+        <span class="vibe-tag">Community Art Center · 2601 N 48th St · Free Gallery · 18+ Shows/Year</span>
+        <p class="card-desc">Lincoln's community art center — galleries, classes, and outreach all under one roof ✨. Free gallery exhibitions from local, regional, and national artists, with 18+ show rotations per year. The classes and workshops are open to all ages and all experience levels. Their Outreach Program brings art instruction to at-risk youth, low-income schools, and cancer patients. On First Fridays the gallery extends to noon–8pm with free opening receptions. More neighborhood center than museum — and that's what makes it work.</p>
+        <div class="must-order">🏆 Do: First Friday extended hours noon–8pm · Check class schedule · Free gallery exhibitions</div>
+        <div class="card-footer">
+          <span class="card-meta">Free · 2601 N 48th St · Tue–Sat 10am–5pm · First Friday noon–8pm</span>
+          <a class="card-link" href="https://www.google.com/maps/search/LUX+Center+Arts+Lincoln+Nebraska" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Community Spots from Google Sheet -->
+  <div class="live-section">
+    <div class="live-section-header">
+      <span class="csection-emoji">🌐</span>
+      <h3 class="csection-label">Community Spots</h3>
+      <span class="live-badge">From the Sheet</span>
+    </div>
+    <div class="card-grid" id="live-galleries">
+      <div class="loading-cards">Connect the sheet to see community-added gallery spots here.</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span>🖼 Art Galleries · Lincoln, NE Field Guide by Zach</span>
+    <span>First Fridays every month · Most free admission · Always verify hours</span>
+    <span><a class="sheet-link footer-sheet-link" target="_blank">📊 Community Spots Sheet</a></span>
+  </footer>
+</div>
+
 <!-- MAP -->
 <div class="page" id="page-map">
   <div id="map-container">
@@ -1542,6 +1820,7 @@ nav {
       <div class="leg-item"><div class="leg-dot" style="background:#2C6882"></div>Bars</div>
       <div class="leg-item"><div class="leg-dot" style="background:#3C6B36"></div>Nature</div>
       <div class="leg-item"><div class="leg-dot" style="background:#6E3FAA"></div>Culture</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#A06030"></div>Galleries</div>
     </div>
   </div>
 </div>
@@ -1564,6 +1843,7 @@ nav {
       <button class="liked-filter-btn"        data-cat="bar"        onclick="setTopFilter('bar')">🍺 Bars</button>
       <button class="liked-filter-btn"        data-cat="nature"     onclick="setTopFilter('nature')">🌿 Nature</button>
       <button class="liked-filter-btn"        data-cat="culture"    onclick="setTopFilter('culture')">🎨 Culture</button>
+      <button class="liked-filter-btn"        data-cat="gallery"    onclick="setTopFilter('gallery')">🖼 Galleries</button>
     </div>
   </div>
 
@@ -2190,6 +2470,7 @@ function renderTopSpots() {
     bar: '#2C6882',
     nature: '#3C6B36',
     culture: '#6E3FAA',
+    gallery: '#A06030',
   };
 
   let entries = _allEntries;
@@ -2226,7 +2507,7 @@ function renderTopSpots() {
     const color = catColors[cat] || '#666';
     const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
     const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    const sectionPage = cat === 'restaurant' ? 'restaurants' : cat === 'bar' ? 'bars' : cat;
+    const sectionPage = cat === 'restaurant' ? 'restaurants' : cat === 'bar' ? 'bars' : cat === 'gallery' ? 'galleries' : cat;
     return `
       <div class="top-spot-card">
         <div class="top-spot-rank ${rankClass}">${i + 1}</div>
@@ -2458,6 +2739,20 @@ const places = [
   { name:'Lied Center for Performing Arts', cat:'culture', lat:40.8228, lng:-96.6990, desc:'🎭 World-class performing arts venue. Broadway tours, orchestras, exceptional acoustics.', detail:'Check liedcenter.org before your visit.', rating:'⭐ 4.9' },
   { name:'Memorial Stadium',            cat:'culture', lat:40.8199, lng:-96.7057, desc:'🏈 90,000+ fans on game day. Longest active sellout streak in college football since 1962.', detail:'Tailgate in the morning. Wear red. Experience it once.', rating:'⭐ 4.9' },
   { name:'National Museum of Roller Skating', cat:'culture', lat:40.7920, lng:-96.7100, desc:'🛼 World\'s only roller skating museum. 200 years of artifacts. Free admission.', detail:'Free. 45 minutes. Best conversation starter of the trip.', rating:'⭐ 4.5' },
+
+  // GALLERIES
+  { name:'The Burkholder Project',      cat:'gallery', lat:40.8196, lng:-96.7130, desc:'🏗️ 36 working artist studios + 3 gallery levels in Haymarket. Watch artists at work.', detail:'Walk all three floors. Talk to the artists — they want you to.', rating:'⭐ 4.8' },
+  { name:'Kiechel Fine Art',            cat:'gallery', lat:40.8168, lng:-96.7057, desc:'🖼️ Est. 1986. 19th/20th century American art, Old Masters, contemporary. Certified appraisal.', detail:'Mar 20: Color Fields opening 5–8pm. Fri open until 8pm.', rating:'⭐ 4.9' },
+  { name:'Gallery 9',                   cat:'gallery', lat:40.8162, lng:-96.7055, desc:'🎭 Independent co-op in Mission Arts Building since 1994. Monthly solo + group shows.', detail:'Wed–Sun. Check monthly show schedule before visiting.', rating:'⭐ 4.7' },
+  { name:'Clements Noyes Art Gallery',  cat:'gallery', lat:40.8162, lng:-96.7056, desc:'🎨 100+ local artists co-op. Original art at accessible prices. First Fridays 6:30–9pm.', detail:'Best on First Friday — food, artists present, relaxed vibe.', rating:'⭐ 4.7' },
+  { name:'Metro Gallery Nebraska',      cat:'gallery', lat:40.8178, lng:-96.7086, desc:'🗺️ 5,000+ works + Nebraska history maps dating to 1850s. Free monthly First Friday.', detail:'Ask to see the historic map collection. Underrated.', rating:'⭐ 4.6' },
+  { name:'Great Plains Art Museum',     cat:'gallery', lat:40.8183, lng:-96.7018, desc:'🌾 Western + Plains art. Indigenous + ranching history. 6,000+ objects. Free.', detail:'Closed on home football Saturdays. First Fridays 5–7pm.', rating:'⭐ 4.8' },
+  { name:'Sheldon Museum of Art',       cat:'gallery', lat:40.8197, lng:-96.7027, desc:'🎨 World-class university art museum. 12,000+ works. Philip Johnson building + sculpture garden.', detail:'American Identity in Art through July 5. Free. Walk sculpture garden.', rating:'⭐ 4.8' },
+  { name:'LUX Center for the Arts',     cat:'gallery', lat:40.8348, lng:-96.6692, desc:'✨ Community art center. 18+ shows/year. Classes, outreach. First Fridays noon–8pm.', detail:'Free admission always. First Fridays extended hours.', rating:'⭐ 4.7' },
+  { name:'Constellation Studios',       cat:'gallery', lat:40.8168, lng:-96.7004, desc:'🖨️ Printmaking + papermaking + bookmaking. Founded by Karen Kunc. Working studio + gallery.', detail:'First Fridays 6–8pm. Specialized and worth the detour.', rating:'⭐ 4.8' },
+  { name:'Michael Forsberg Gallery',    cat:'gallery', lat:40.8170, lng:-96.7100, desc:'🦅 Conservation photography. National Geographic, Audubon. Great Plains wildlife + landscape.', detail:'Mon–Sat 10am–6pm. Crane migration series is stunning.', rating:'⭐ 4.8' },
+  { name:'Tugboat Gallery',             cat:'gallery', lat:40.8168, lng:-96.7052, desc:'⚓ Non-commercial, all-volunteer. 500+ artists shown since 2005. Experimental + underrepresented art.', detail:'First Friday staple. Check tugboat.gallery for hours.', rating:'⭐ 4.7' },
+  { name:'WallSpace LNK',              cat:'gallery', lat:40.8070, lng:-96.6985, desc:'📸 Nonprofit contemporary gallery. Photography + Plains art. Monthly shows + talks.', detail:'Fri–Sun noon–5pm. Photography-forward. Growing fast.', rating:'⭐ 4.7' },
 ];
 
 // ── MAP INIT ──────────────────────────────────────────────────────────
@@ -2516,11 +2811,41 @@ function injectCommentWidgets() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
+function renderFirstFridayDates() {
+  const el = document.getElementById('ff-dates-gallery');
+  if (!el) return;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fullMonths = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now = new Date();
+  const upcoming = [];
+  // Find next 3 upcoming first Fridays
+  let year = now.getFullYear(), month = now.getMonth();
+  while (upcoming.length < 3) {
+    const d = new Date(year, month, 1);
+    while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+    if (d >= now) upcoming.push(new Date(d));
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+  el.innerHTML = upcoming.map((d, i) => {
+    const daysAway = Math.ceil((d - now) / 86400000);
+    const label = i === 0
+      ? (daysAway <= 7 ? `🔴 ${daysAway === 0 ? 'TODAY' : daysAway === 1 ? 'Tomorrow' : 'In ' + daysAway + ' days'}` : 'Next')
+      : (i === 1 ? 'Following' : 'Then');
+    return `<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);padding:0.75rem 1rem;min-width:160px;">
+      <div style="font-size:0.5rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,160,48,0.7);margin-bottom:0.3rem">${label}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold)">${fullMonths[d.getMonth()]} ${d.getDate()}</div>
+      <div style="font-size:0.58rem;color:rgba(240,232,208,0.55);margin-top:0.2rem">5–10pm · Downtown Lincoln</div>
+    </div>`;
+  }).join('');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   buildAllEntries([]);
   injectCommentWidgets();
   loadSheetEntries();
   loadLikeCounts();
+  renderFirstFridayDates();
 });
 
 function initMap() {
